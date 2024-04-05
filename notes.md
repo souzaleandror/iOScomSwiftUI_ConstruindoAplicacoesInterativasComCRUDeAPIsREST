@@ -672,3 +672,683 @@ Configurar o ambiente de desenvolvimento para iniciar o projeto;
 Entender o projeto inicial, entendendo sua estrutura e os principais componentes;
 Utilizar a ferramenta Insomnia para fazer requisições e testar APIs.
 Continue explorando e testando!
+
+#### 05/04/2024
+
+@02-Requisição GET e async/await
+
+@@01
+Entendendo operações assíncronas
+
+Neste vídeo, o objetivo é consumir a lista de especialistas da nossa API, pois, neste momento, nós temos a lista de forma estática, como podemos observar no arquivo Specialist, no array specialists. Queremos obter essa informação da nossa API, tornando o aplicativo mais dinâmico.
+Para isso, vamos acessar o arquivo WebService e implementaremos a função getAllSpecialists. Antes disso, porém, vamos retornar ao Insomnia para estudar como essa requisição funciona.
+
+Dentro da pasta "Especialista", queremos acionar a requisição que retorna todos os especialistas: GET: Retorna todos os especialistas.
+
+Trata-se de uma requisição do tipo GET, o que significa que estamos buscando dados, e o endpoint (rota) dessa requisição é /especialista. Essa requisição não exige o envio de dados no corpo da mensagem e retorna uma lista de especialistas.
+
+Ao enviar a requisição clicando em "Send" na barra superior, você notará que ela retorna uma lista de especialistas na aba direita da tela.
+
+Retorno de GET: Retorna todos os especialistas
+[
+    {
+        "nome": "Dr. João da Silva",
+        "crm": "12345",
+        "image": "https://images.unsplash.com/photo-
+        1637059824899-a441006a68757ixlib=rb-
+        4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWd1fHx8fGVufDB8fHx8fA 3D
+        *30&auto=format&fit=crop&w=752&q=80",
+        "especialidade": "Cardiologia",
+        "email": "joao.silva@example.com",
+        "telefone": "(11) 99999-9999",
+        "id": "b6156d16-8329-4690-980c-eb3b30eaa585"
+    },
+...
+COPIAR CÓDIGO
+O especialista é retornado com chaves em português, razão pela qual fizemos a conversão com Coding Keys.
+
+Nosso objetivo, agora, é decodificar esses dados para a nossa struct Specialist, um array de especialistas.
+
+A função getAllSpecialists que implementaremos não receberá nenhum parâmetro, mas fará uma chamada de rede, ou seja, se comunicará com um serviço externo.
+
+As chamadas de rede, assim como qualquer operação assíncrona, demoram um tempo para serem completadas porque dependem de vários fatores, como sua conexão com a internet. Se sua conexão for lenta, a chamada demorará muito, enquanto uma conexão mais rápida permitirá uma chamada mais rápida.
+
+Como as chamadas de rede não são instantâneas, precisamos usar Programação Assíncrona.
+
+Esse tipo de programação difere da Programação Síncrona, que ocorre, por exemplo, quando criamos uma função, chamamos essa função e obtemos um valor de retorno. A próxima linha de código não é executada até que a função termine.
+
+Se usássemos Programação Síncrona com chamadas de rede, nosso aplicativo poderia "congelar". Isso porque teríamos que esperar a chamada de rede retornar a requisição, e não poderíamos fazer mais nada além disso, resultando numa experiência ruim para a pessoa usuária. É por isso que precisamos da Programação Assíncrona!
+
+Quando iniciamos uma chamada de rede, simplesmente seguimos para a próxima linha de código e não esperamos que a chamada termine, não congelamos nosso aplicativo.
+
+Isso é ótimo para a fluidez do aplicativo, mas apresenta um novo desafio: como saber quando a chamada de rede terminou? Como podemos obter os dados dessa chamada de rede?
+
+Aí entra o modelo Async / Await, uma nova funcionalidade da linguagem Swift que foi introduzida na versão 5.5 e mudou totalmente a maneira de realizar requisições assíncronas.
+
+Vamos fazer uma analogia com o mundo real. Imagine que você está numa biblioteca e pede para a pessoa bibliotecária pegar um livro que é meio raro e está num depósito, um pouco difícil de achar, o que leva um tempo.
+
+Se o contexto fosse síncrono, você ficaria esperando a pessoa bibliotecária pegar o livro, o que pode levar muito tempo, e você ficaria "bloqueado", sem fazer mais nada. Isso seria muito ineficaz.
+
+Agora, num contexto assíncrono, enquanto a pessoa bibliotecária vai buscar o livro, o que pode levar um bom tempo, você pode realizar outras tarefas, como, por exemplo, procurar outro livro, tomar um café, ou usar o computador da biblioteca, entre outras tarefas possíveis.
+
+Na criação da função assíncrona, utilizamos a palavra-chave async, e para chamar essa função, usamos a palavra-chave await. Isso significa "esperar esta função terminar".
+
+Neste vídeo, entendemos o contexto de operações assíncronas e por que precisamos usá-las quando falamos de chamadas de rede, requisições para serviços externos. No próximo vídeo, implementaremos, de fato, esta função assíncrona.
+
+@@02
+Criando a primeira requisição GET com Async/Await
+
+Vamos implementar a função getAllSpecialists(), que está no arquivo WebService, dentro de struct WebService.
+Começaremos marcando a função como async, pois ela será assíncrona, e precisamos definir o retorno dessa função.
+
+O retorno será feito com uma seta ->, e será um array de Specialist. Marcaremos esse retorno como um array opcional, adicionando um ? depois dele.
+
+WebService
+func getAllSpecialists() async -> [Specialist]? {
+
+}
+COPIAR CÓDIGO
+Ele será opcional porque, em caso de erro, retornaremos nil.
+
+Como este curso não é focado em tratamento de erros e exceções, retornaremos apenas nil quando ocorrer um erro. Em cursos futuros, aprenderemos melhores abordagens para tratamento de erros.
+
+Contudo, alguns problemas podem ocorrer durante a requisição. Por exemplo, às vezes a chamada de rede é mal sucedida por conta de algum erro na API, ou até mesmo um erro na hora de decodificar os dados.
+
+Por isso, é necessário informar à função que vai chamar getAllSpecialists() quando ocorre esse tipo de erro. Portanto, devemos lançar um erro.
+
+Para isso, depois de async, escreveremos throws. Essa palavra-chave significa que esta função pode lançar um erro. Vamos entender isso melhor na prática mais adiante.
+
+func getAllSpecialists() async throws -> [Specialist]? {
+
+}
+COPIAR CÓDIGO
+Começaremos criando uma constante chamada endpoint, e a igualaremos à baseURL mais a nossa rota, que é /especialista, conforme conferimos no Insomnia. Então: baseURL + "/especialista".
+
+func getAllSpecialists() async throws -> [Specialist]? {
+    let endpoint = baseURL + "/especialista"
+}
+COPIAR CÓDIGO
+Agora, precisamos converter essa string endpoint em um objeto do tipo URL para fazer a requisição.
+
+Quando tentamos converter para uma URL de fato (afinal, existe uma classe chamada URL no Swift), pode ocorrer algum erro. Por isso o retorno é uma opcional.
+
+Então, já começaremos desembrulhando url com guard let url recebendo URL(), passando a opção string como endpoint.
+
+Como estamos usando guard let, precisamos marcar o else e, dentro dele, inseriremos um print() para exibir a mensagem "Erro na URL!". Também vamos retornar nil.
+
+func getAllSpecialists() async throws -> [Specialist]? {
+    let endpoint = baseURL + "/especialista"
+    
+    guard let url = URL(string: endpoint) else {
+        print("Erro na URL!")
+        return nil
+    }
+}
+COPIAR CÓDIGO
+Pronto, já tratamos a URL!
+
+Agora, daremos início à chamada de rede, utilizando a classe nativa do Swift chamada URLSession, responsável por fazer todas as chamadas de rede.
+
+Começaremos criando uma variável logo após o fechamento de guard let url, chamada response, recebendo URLSession.shared. A propriedade shared é uma propriedade estática de URLSession, não estamos instanciando esta classe. Depois, adicionamos .data e abrimos parênteses, resultando em URLSession.shared.data().
+
+Dentro dos parênteses, escolhemos a opção from: URL. Quando escolhemos essa opção, podemos observar que o async throws é marcado por padrão. Isso significa que essa função é assíncrona e pode lançar um erro.
+
+Portanto, dentro de URL, vamos escrever a nossa variável url, resultando em: URLSession.shared.data(from: url).
+
+Como essa função é assíncrona e pode lançar um erro, para chamá-la, precisamos marcá-la com try. Isso significa que estamos tentando chamar a função e, caso ocorra um erro, ela pode lançar esse erro.
+
+Depois adicionamos await, pois precisamos dele para chamar qualquer função assíncrona. Então, teremos: try await URLSession.shared.data(from: url).
+
+func getAllSpecialists() async throws -> [Specialist]? {
+        let endpoint = baseURL + "/especialista"
+
+        guard let url = URL(string: endpoint) else {
+                print("Erro na URL!")
+                return nil
+        }
+
+        let response = try await URLSession.shared.data(from: url)
+}
+COPIAR CÓDIGO
+Se pressionarmos a tecla "Option" e clicarmos em data (from), veremos que o retorno dessa função é, na verdade, uma tupla que contém duas variáveis: Data e URLResponse.
+
+A primeira, do tipo Data, são os dados retornados. A segunda, do tipo URLResponse, contém informações da resposta, por exemplo, o código de status.
+
+Por isso, podemos desestruturar essa tupla. Para isso, no lugar de response, vamos abrir e fechar parênteses e, dentro deles, escrever data, response, resultando em let (data, response). Tudo desestruturado!
+
+Note que não utilizaremos a variável response, pois esse não é um curso focado em tratamento de erros e exceções, então, não verificaremos o código de status da resposta ou algo do tipo. Então, substituiremos essa variável por um underline: let (data, _).
+
+func getAllSpecialists() async throws -> [Specialist]? {
+        let endpoint = baseURL + "/especialista"
+
+        guard let url = URL(string: endpoint) else {
+                print("Erro na URL!")
+                return nil
+        }
+
+        let (data, _) = try await URLSession.shared.data(from: url)
+}
+COPIAR CÓDIGO
+Agora, temos a variável data e precisamos decodificar para o nosso modelo de dados Specialist. Para isso, utilizaremos uma classe chamada JSONDecoder.
+
+Então, vamos agora criar uma variável chamada specialists, recebendo try JSONDecoder, porque o JSONDecoder pode lançar um erro e não é assíncrono, então não precisamos do await.
+
+Como precisamos instanciar o JSONDecoder, vamos abrir e fechar parênteses e depois chamar uma função .decode().
+
+Dentro desses parênteses, inserimos o tipo da decodificação, que será um array de Specialist: decode.([Specialist]). Precisamos marcar o .self depois para informar que queremos o tipo em si, um array de Specialist, e não uma instância desse tipo.
+
+Por fim, também passamos como parâmetro do decode() o from: data. Teremos: let specialists = try JSONDecoder().decode([Specialist].self, from: data).
+
+Para terminar, retornamos a variável specialists. Teremos, então, o seguinte código para a função getAllSpecialists().
+
+func getAllSpecialists() async throws -> [Specialist]? {
+        let endpoint = baseURL + "/especialista"
+
+        guard let url = URL(string: endpoint) else {
+                print("Erro na URL!")
+                return nil
+        }
+
+        let (data, _) = try await URLSession.shared.data(from: url)
+
+        let specialists = try JSONDecoder().decode([Specialist].self, from: data)
+
+        return specialists
+}
+COPIAR CÓDIGO
+Mas, por que estamos decodificando?
+
+Precisamos decodificar pois a variável data, do tipo Data, representa uma coleção de bytes. Ao dar um print nesse data, você notará que o retorno é em bytes, ou seja, o retorno do JSON em formato de bytes.
+
+Não abordaremos muitos detalhes sobre isso, mas é importante entender que precisamos decodificar o retorno para o formato que realmente queremos utilizar.
+
+Agora temos uma requisição criada, mas ainda não sabemos se está funcionando, pois ainda não chamamos a função getAllSpecialists().
+
+Precisamos chamá-la em nossa HomeView, onde temos o forEach representando todos os especialistas. Mas isso é assunto para o próximo vídeo. Nos encontramos lá!
+
+@@03
+Atualizando a lista de especialistas
+
+Na HomeView, vamos começar instanciando a nossa struct WebService, porque precisamos chamar o método que está dentro dessa estrutura. Então, criamos o serviço com let service = WebService(), dentro de struct HomeView.
+HomeView
+struct HomeView: View {
+    
+    let service = WebService()
+        
+// código omitido
+COPIAR CÓDIGO
+Agora, logo em seguida, vamos criar uma variável de estado que será um array de especialistas, pois, quando chamarmos essa função, vamos basicamente atribuir o retorno dessa função à variável.
+
+Então, utilizamos @State private var specialists, que é do tipo array de Specialist, e inicializamos essa variável como um array vazio.
+
+@State private var specialists: [Specialist] = []
+COPIAR CÓDIGO
+Em seguida, vamos criar uma função chamada getSpecialists(), que será assíncrona.
+
+func getSpecialists() async {
+
+}
+COPIAR CÓDIGO
+Quando vamos chamar essa função? Queremos chamá-la assim que a View aparecer.
+
+Então, no final dela, depois do padding(.top), vamos adicionar o modificador onAppear {}, significando que esse modificador será chamado assim que a tela for carregada.
+
+Dentro dele, precisamos chamar a função getSpecialists(). Dentro dessa função, mais adiante, vamos chamar o service.getAllSpecialists.
+
+Mas essa função é marcada como assíncrona. Isso porque a função chamada dentro do WebService() também é assíncrona.
+
+Vamos tentar chamar getSpecialists() dentro do onAppear:
+
+// código omitido
+.onAppear {
+        Task {
+             getSpecialists()
+        }
+COPIAR CÓDIGO
+Isso vai causar um erro. Por quê? Porque toda vez que chamamos uma função assíncrona dentro de uma View, precisamos inseri-la em um contexto assíncrono. Definimos esse contexto assíncrono com um Task {}. .
+
+Vamos criar esse Task e mover a chamada da função getSpecialists() para dentro dele. Além disso, sabemos que toda função assíncrona precisa ser chamada com a palavra-chave await. Então, antes do getSpecialists, adicionamos o await:
+
+.onAppear {
+        Task {
+                await getSpecialists()
+        }
+COPIAR CÓDIGO
+Vamos começar a implementar a nossa função getSpecialist(), mais acima no arquivo.
+
+No nosso arquivo WebService, a nossa função está marcada como throw, significando que pode lançar o erro. Se ela lançar um erro, também precisamos capturá-lo. Ou seja, precisamos ter isso pronto para isso. Por esse motivo, usamos um bloco de código chamado do e catch.
+
+Começamos escrevendo do, abrimos chaves, então o catch e abrimos chaves novamente.
+
+func getSpecialists() async {
+        do {
+        
+        } catch {
+
+        }
+}
+COPIAR CÓDIGO
+Dentro do do, tentamos fazer uma requisição. E aqui dentro do catch, se a requisição lançar um erro, ele vai cair diretamente neste catch. Dentro desse catch, temos acesso a uma variável chamada error, que significa o erro lançado.
+
+Dentro do catch, tudo o que faremos é printar uma mensagem "Ocorreu um erro ao obter os especialistas:" com uma interpolação da nossa variável de erro, \(error).
+
+Dentro do do, precisamos chamar a nossa função definida dentro do WebService. Como estamos retornando um array de especialistas no formato opcional, precisamos desembrulhar essa variável. Então, escrevemos if let specialists = try await, porque a função jogará o erro caso ele aconteça e é assíncrona, e service.getAllSpecialists().
+
+Como estamos usando if let, uma condicional, então precisamos abrir e fechar chaves. Se tudo der certo, se conseguirmos desembrulhar essa variável e não ocorrer nenhum erro, escrevemos self.specialists = specialists.
+
+func getSpecialists() async {
+    do {
+        if let specialists = try await service.getAllSpecialists() {
+            self.specialists = specialists
+        }
+    } catch {
+        print("Ocorreu um erro ao obter os especialistas: \(error)")
+    }
+}
+COPIAR CÓDIGO
+O self.specialists é a variável de estado que declaramos anteriormente em @State private var specialists. Sempre que usamos self., queremos dizer que estamos pegando algum atributo ou algum método da nossa própria struct.
+
+E esse segundo specialists, após o sinal de igual, é a variável que acabamos de desembrulhar. Então, por esse motivo, usamos o self. para indicar que queremos pegar a nossa variável de estado.
+
+Isso ocorre porque ambas possuem o mesmo nome. Se escrevêssemos specialists = specialists, teríamos um erro.
+
+No preview do aplicativo, na aba direita da tela, já são mostrados mais do que três especialistas, que é o que definimos no array estático. Isso significa que nossa requisição foi feita corretamente!
+
+Para verificar, vamos pressionar "Command + R" para executar o aplicativo no simulador. Perfeito! Agora temos uma lista de especialistas de forma totalmente dinâmica.
+
+A imagem dos profissionais continua a mesma, igual para todos, pois ainda é estática. Vamos descobrir como podemos fazer o download de imagens de uma URL mais adiante.
+
+No nosso arquivo Specialist, podemos apagar todo o array let specialists: [Specialist] estático, pois não será mais utilizado.
+
+Outras possibilidades
+Por fim, vamos retornar ao arquivo da HomeView.
+
+Quando usamos o onAppear, que utilizamos nesse contexto chamado de Task, poderíamos também utilizar um modificador de propriedade chamado de .task e simplesmente passar await getSpecialists(). Isso porque este modificador também é chamado assim que a tela é carregada. Mas vamos deixar no onAppear, como estava antes.
+
+Você poderia implementar o do / catch diretamente dentro do onAppear, mas é interessante criar outra função para começar a separar um pouco as responsabilidades do nosso código.
+
+Nossa chamada de rede está funcionando, já estamos obtendo todos os especialistas de uma API e a tela HomeView já está sendo carregada com estes novos especialistas.
+
+Agora, é hora de descobrir como podemos mostrar a imagem de cada especialista fazendo o download de uma URL. Faremos isso no próximo vídeo!
+
+@@04
+Realizando o download de imagens
+
+Agora a nossa tarefa é implementar a imagem do especialista de forma dinâmica e não mais apenas no arquivo assets, como estamos fazendo até o momento.
+Em relação a imagens baixadas de uma URL, também temos uma operação assíncrona. Não é tão fácil quanto colocar o URL de uma imagem em um arquivo HTML, por exemplo, infelizmente. Precisamos utilizar o URLSession fazendo uma requisição do tipo GET.
+
+Vamos voltar ao arquivo WebService, criar outra função chamada downloadImage que vai receber o parâmetro imageURL, com from imageURL, que será do tipo String.
+
+Quando chamarmos essa função downloadImage(), passaremos o parâmetro from; mas, dentro dessa função no WebService, referenciamos como ImageURL. Isso é chamado de parâmetro label.
+
+Vamos marcar ess função como async throws, porque será uma função assíncrona que pode lançar algum erro. O retorno será uma UIImage, que será também opcional.
+
+WebService
+func downloadImage(from imageURL: String) async throws -> UIImage? {
+
+}
+COPIAR CÓDIGO
+Isso causará um erro, porque UIImage pertence ao framework UIKit e nós não estamos importando ele neste arquivo. Então, em vez de importar Foundation na linha 8, vamos importar UIKit.
+
+import UIKit
+COPIAR CÓDIGO
+Não precisamos importar Foundation, porque importando UIKit, automaticamente estamos importando Foundation também, então é redundante importar os dois.
+
+Vamos começar. Primeiro, faremos uma verificação da URL com guard let url. Podemos notar que as chamadas são muito parecidas, então neste momento do curso teremos muita repetição de código.
+
+Nessa verificação, instanciamos URL() passando string: imageURL. Se der erro, retornamos um print("Erro na URL!") e um return nil.
+
+func downloadImage(from imageURL: String) async throws -> UIImage? {
+        guard let url = URL(string: imageURL) else {
+                print("Erro na URL!")
+                return nil
+        }
+}
+COPIAR CÓDIGO
+Vamos fazer a requisição. Para desestruturar a tupla, let (data, _), com underline porque não vamos usar o response, igual a try await URLSession.shared.data(from: url).
+
+let (data, _) = try await URLSession.shared.data(from: url)
+COPIAR CÓDIGO
+Agora não precisamos, por exemplo, decodificar os dados no JSONDecoder.
+
+Quando instanciamos uma UIImage no retorno, podemos passar o parâmetro data, que já é do tipo Data, o mesmo tipo que temos no retorno da chamada assíncrona pela URLSession. Então, vamos selecionar essa opção e passar o tipo data.
+
+Temos, por fim:
+
+func downloadImage(from imageURL: String) async throws -> UIImage? {
+        guard let url = URL(string: imageURL) else {
+                print("Erro na URL!")
+                return nil
+        }
+
+        let (data, _) = try await URLSession.shared.data(from: url)
+
+        return UIImage(data: data)
+}
+COPIAR CÓDIGO
+Desse retorno em bytes, conseguimos montar a imagem e exibi-la para o usuário.
+
+Esse UIImage(data: data) retorna um opcional. Por esse motivo, nós temos também um retorno opcional na declaração da função, em UIImage?.
+
+Vamos ao arquivo SpecialistCardView, porque é aqui que temos uma imagem. Começaremos criando a instância de WebService, dentro do struct SpecialistCardView:
+
+SpecialistCardView
+let service = WebService()
+COPIAR CÓDIGO
+Vamos criar também uma variável de estado para manter a imagem do especialista:
+
+@State private var SpecialistImage: UIImage?
+COPIAR CÓDIGO
+Vamos criar uma função chamada downloadImage que será assíncrona.
+
+func downloadImage() async {
+
+}
+COPIAR CÓDIGO
+Finalmente, chamamos essa função assim que a View for carregada. Logo após cornerRadius(16.0), acionamos o modificador onAppear ou task, tanto faz.
+
+Dentro dele, adicionamos o contexto assíncrono, chamado Task e, dentro de chaves, escrevemos await downloadImage() para chamar a função.
+
+.onAppear {
+        Task {
+                await downloadImage()
+        }
+COPIAR CÓDIGO
+Dentro da função downloadImage(), adicionamos nosso bloco do / catch.
+
+Dentro do catch, escrevemos print("Ocorreu um erro ao obter a imagem: \(error).")
+
+Dentro do do, como estamos retornando uma opcional da nossa função, fazemos o desembrulho: if let image = try await service.downloadImage(from:).
+
+Agora, estamos passando o parâmetro from, o parâmetro label que podemos utilizar nas funções.
+
+Dentro dele, passaremos a imageURL que temos dentro da variável specialist, que é do tipo Specialist. Então, escrevemos specialist.imageUrl.
+
+Como é uma condicional, abrimos chaves e escrevemos self.specialistImage = image.
+
+func downloadImage() async {
+        do {
+                if let image = try await service.downloadImage(from: specialist.imageUrl) {
+                        self.specialistImage = image
+                }
+        } catch {
+                print("Ocorreu um erro ao obter a imagem: \(error)")
+        }
+}
+COPIAR CÓDIGO
+Pronto! Estamos atualizando a variável de estado conforme o retorno da função definida no WebService.
+
+Por fim, precisamos mostrar essa imagem na tela porque, até então, ela é estática.
+
+Como a variável de estado specialistImage é uma opcional, vamos fazer uma verificação logo dentro do HStack.
+
+Vamos escrever: if let Image = specialistImage, abrir e fechar chaves e inserir dentro delas todo o componente Image(.doctor). Como parâmetro, vamos substituir o .doctor pelo parâmetro uiImage, do tipo image:
+
+var body: some View {
+        VStack(alignment: .leading) {
+                HStack(spacing: 16.0) {
+
+                        if let image = specialistImage {
+                                Image(uiImage: image)
+                                        .resizable()
+                                        .scaledToFill()
+                                        .frame(width: 64, height: 64)
+                                        .clipShape(Circle())
+                        }
+// código omitido
+COPIAR CÓDIGO
+Em versões mais recentes do Swift, não precisamos desembrulhar uma variável da forma que fizemos. Basta escrever if let specialistImage, sem igualar a image, e mudar o tipo de uiImage para specialistImage:
+
+// código omitido
+
+if let specialistImage {
+        Image(uiImage: specialistImage)
+                .resizable()
+                .scaledToFill()
+                .frame(width: 64, height: 64)
+                .clipShape(Circle())
+}
+// código omitido
+COPIAR CÓDIGO
+No Preview, a imagem do especialista já foi alterada. Vamos executar este código com "Command + R" para abrir o simulador.
+
+Agora temos as imagens dos especialistas de forma totalmente dinâmica! Cada um exibe sua foto específica.
+
+Vale mencionar alguns pontos:
+
+Você pode implementar um loading para ser mostrado enquanto a imagem for carregada.
+Você pode também exibir uma imagem padrão para quando ocorrer algum erro na requisição.
+Existe técnicas de cache que podem ser implementadas.
+Imagine que toda vez que a pessoa usuária acessar essa tela inicial, a imagem será baixada novamente desta URL. Isso pode consumir bastante dados, especialmente se a pessoa usuária tem pouca quantidade de dados para utilizar, ou a internet está um pouco mais lenta.
+
+Por isso, podemos implementar técnicas de cache, onde a imagem será baixada no primeiro momento, mas será salva localmente, tornando seu carregamento quase instantâneo posteriormente.
+
+Não vamos abordar essa técnica neste curso, mas deixaremos um material complementar para você entender como isso é implementado.
+
+Agora, já temos uma tela totalmente funcional, consumindo dados da API, baixando imagens de uma URL externa.
+
+Agora está na hora de começarmos a, de fato, preparar o terreno para que a pessoa paciente consiga agendar uma consulta. Até o próximo vídeo.
+
+@@05
+Aprofundando-se nas requisições assíncronas e decodificação
+
+Com base no código e conceitos discutidos nesta aula, responda à seguinte pergunta.
+Considerando a estrutura do código e o funcionamento das operações assíncronas, qual das seguintes declarações sobre a sequência de chamadas e ações é correta?
+
+No bloco .onAppear, a função getSpecialists() é chamada e espera-se que ela preencha a variável @State private var specialists, mas se ocorrer um erro, ela será deixada vazia e a aplicação continuará funcionando normalmente.
+ 
+Exatamente! Atualizamos a variável de estado, mas se ocorrer um erro, a variável de estado será apenas um array vazio.
+Alternativa correta
+A função getAllSpecialists() sempre retorna uma lista de Specialist independente de erros de conexão ou decodificação.
+ 
+Alternativa correta
+Quando a função downloadImage(from:) é chamada, se a URL fornecida não for válida, a função retornará uma imagem padrão.
+ 
+A função imprimirá "Erro na URL!" e retornará nil se a URL não for válida, e não há menção a uma imagem padrão.
+Alternativa correta
+A função downloadImage(from:) primeiramente decodifica o JSON antes de tentar fazer a conversão para um objeto UIImage.
+ 
+A função downloadImage(from:) apenas baixa os dados da imagem e os converte em uma UIImage sem qualquer processo de decodificação de JSON.
+
+@@06
+Implementando a requisição para baixar imagens HTTP no swift
+
+A Clínica médica Vollmed está investindo em tecnologia para melhorar o atendimento aos seus pacientes.
+Quando um paciente acessa o aplicativo Vollmed, ele deve ser capaz de ver todas as imagens associadas a um especialista, que são definidas por uma URL. Para isso, é necessário que o aplicativo faça uma requisição HTTP para baixar essas imagens da internet.
+
+Sendo assim, selecione a alternativa correta em relação ao processo de download de uma imagem e a atualização da interface do usuário:
+
+Você usaria a função URLSession.shared.downloadTask para criar a requisição HTTP, como no código abaixo:
+func downloadImage(from imageURL: String) async throws -> UIImage? {
+    guard let url = URL(string: imageURL) else {
+        print("Erro na URL!")
+        return nil
+    }
+
+    let (data, _) = try await URLSession.shared.downloadTask(from: url)
+
+    return UIImage(data: data)
+}
+ 
+Alternativa correta
+Você usaria a função URLSession.shared.data para criar a requisição HTTP, como no código abaixo:
+func downloadImage(from imageURL: String) async throws -> UIImage? {
+    guard let url = URL(string: imageURL) else {
+        print("Erro na URL!")
+        return nil
+    }
+
+    let (data, _) = try await URLSession.shared.data(from: url)
+
+    return UIImage(data: data)
+}
+ 
+Esta é a forma padrão de fazer requisições HTTP utilizando async/await em Swift! Temos uma função que realiza o download da imagem, considerando o throws (já que essa requisição pode dar erro); um guard para desembrulhar a URL da imagem. Por último, no let (data, _)..., efetivamente fazemos o download da imagem e retornamos ela no return.
+Alternativa correta
+Você usaria a função DispatchQueue.main.async para atualizar a UI em SwiftUI, da seguinte maneira:
+func downloadImage() async {
+    do {
+        if let image = try await service.downloadImage(from: specialist.imageUrl) {
+                        DispatchQueue.main.async {
+                            self.specialistImage = image
+                        }
+        }
+    } catch {
+        print("Ocorreu um erro ao obter a imagem: \(error)")
+    }
+}
+
+@@07
+Para saber mais: como melhorar a experiência do usuário com cache de imagens
+
+No desenvolvimento de aplicativos, otimizar a experiência do usuário é essencial.
+Uma das maneiras de conseguir isso é reduzindo os tempos de carregamento e garantindo que os dados sejam acessados rapidamente. Uma técnica valiosa para atingir essa otimização é o uso de cache, especialmente quando se trata de imagens, que podem ser um dos maiores consumidores de dados e tempo em um app.
+
+O que é cache?
+Cache é uma tecnologia que armazena dados temporariamente para que, quando solicitados novamente, eles possam ser entregues mais rapidamente. Em vez de buscar dados (como imagens) da web (servidor) toda vez que são necessários, os dados são retirados do cache local, economizando tempo e recursos.
+
+Por que o cache de imagens é importante?
+Redução do consumo de dados: Se um usuário já baixou uma imagem, não faz sentido baixá-la novamente.
+Melhoria no desempenho: Imagens em cache são carregadas quase instantaneamente.
+Menos pressão sobre o servidor: Menos solicitações ao servidor significa menos carga e potencialmente menos custos.
+Experiência do usuário: O carregamento mais rápido se traduz em uma melhor experiência para o usuário.
+Como implementar o cache de imagens no iOS?
+Podemos implementar o cache com o próprio sistema de cache fornecido pelo ecossistema do iOS através do NSCache. Veja o passo a passo a seguir:
+
+1 - Crie o cache
+
+let imageCache = NSCache<NSString, UIImage>()
+COPIAR CÓDIGO
+2 - Modifique a função de download de imagens no WebService
+
+Antes de baixar a imagem, verifique se ela já está em cache:
+
+func downloadImage(from imageURL: String) async throws -> UIImage? {
+    guard let url = URL(string: imageURL) else {
+        print("Erro na URL!")
+        return nil
+    }
+
+    // Verificar cache
+    if let cachedImage = imageCache.object(forKey: imageURL as NSString) {
+        return cachedImage
+    }
+
+    let (data, _) = try await URLSession.shared.data(from: url)
+    guard let image = UIImage(data: data) else {
+        return nil
+    }
+
+    // Salvar imagem no cache
+    imageCache.setObject(image, forKey: imageURL as NSString)
+
+    return image
+}
+COPIAR CÓDIGO
+Agora, quando a função downloadImage é chamada, ela primeiro verifica se a imagem já está em cache. Se estiver, a imagem em cache é retornada. Caso contrário, a imagem é baixada, e depois de baixada, ela é armazenada no cache para uso futuro.
+
+Observações
+O NSCache é semelhante a um dicionário, mas com a vantagem de remover automaticamente objetos se o sistema ficar com pouco recurso de memória;
+Existem bibliotecas de terceiros, como o SDWebImage ou Kingfisher, que oferecem funcionalidades de download e cache de imagens com muitas opções e otimizações adicionais;
+O cache não deve ser usado para dados que mudam frequentemente. Ele é ideal para conteúdo que permanece relativamente constante.
+Entender e implementar o cache de imagens pode melhorar a performance do seu aplicativo e oferecer uma experiência mais suave para seus usuários.
+
+E, agora que você tem uma noção básica, pode explorar maneiras mais avançadas de otimizar ainda mais seu sistema de cache!
+
+@@08
+Para saber mais: CRUD e as operações com dados
+
+Em nosso aplicativo, fizemos a primeira requisição GET para pegar os dados de uma API. Além dessa operação, existem outras que veremos ao longo do curso. No entanto, o que é CRUD?
+O CRUD é um acrônimo que representa as quatro operações fundamentais de manipulação de dados em sistemas de gerenciamento de banco de dados:
+
+Create (Criar): operação POST;
+Read (Ler): operação GET;
+Update (Atualizar): operação PUT/PATCH;
+Delete (Excluir): operação DELETE.
+Vamos ver cada uma dessas operações a seguir.
+
+Create (Criar): Essa operação envolve a adição de novos registros ou elementos aos dados existentes. Geralmente, isso é feito por meio de formulários de entrada, onde os usuários podem inserir informações relevantes.
+Read (Ler): A operação de leitura envolve a recuperação e exibição dos dados existentes. Isso inclui a capacidade de visualizar informações armazenadas no banco de dados de forma legível e acessível. Já fizemos essa operação com a requisição GET!
+Update (Atualizar): A operação de atualização permite que os usuários modifiquem os dados existentes. Isso é geralmente realizado por meio de formulários de edição, onde as informações existentes podem ser alteradas.
+Delete (Excluir): A operação de exclusão envolve a remoção de registros ou elementos de dados. Essa operação deve ser executada com cuidado, uma vez que exclui permanentemente informações do sistema.
+Para que serve o CRUD?
+O CRUD é fundamental para qualquer aplicativo que lide com dados, pois permite que os desenvolvedores executem operações essenciais de gerenciamento de informações. Vejas as principais finalidades do CRUD:
+
+Gestão de dados: O CRUD é usado para criar, ler, atualizar e excluir informações em bancos de dados ou conjuntos de dados. Isso é essencial para o gerenciamento eficiente de informações em um aplicativo.
+Interatividade do usuário: Ele permite que os usuários interajam com os dados do aplicativo de forma significativa. Os formulários de entrada e edição são exemplos de como o CRUD facilita a interação do usuário com os dados.
+Manutenção de registros: Os aplicativos geralmente precisam permitir que os usuários mantenham registros armazenados ou informações específicas como informações de cadastro (nome, e-mail, CPF), fotos e muito mais. O CRUD é a base para essas operações de manutenção.
+Exemplos práticos
+A seguir, podemos encontrar exemplos de como o CRUD é implementado e utilizado no SwiftUI:
+
+Exemplo 1: Lista de contatos
+Suponhamos que você esteja desenvolvendo um aplicativo de lista de contatos no SwiftUI. Nesse cenário, o CRUD seria utilizado da seguinte maneira:
+
+Create (Criar): Os usuários podem adicionar novos contatos à lista, inserindo nome, número de telefone e outras informações relevantes em um formulário de criação.
+Read (Ler): A lista de contatos existentes é exibida na interface do usuário, permitindo que os usuários visualizem informações de contato.
+Update (Atualizar): Os usuários podem editar informações de contato existentes, como números de telefone ou endereços, por meio de um formulário de edição.
+Delete (Excluir): Os contatos podem ser excluídos permanentemente da lista, caso o usuário não deseje mais mantê-los.
+Exemplo 2: Aplicativo de lista de tarefas
+Em um aplicativo de lista de tarefas no SwiftUI, o CRUD seria aplicado da seguinte forma:
+
+Create (Criar): Os usuários podem criar novas tarefas inserindo seu título e descrição em um formulário de criação de tarefas.
+Read (Ler): A lista de tarefas existentes é exibida na interface do usuário, permitindo que os usuários vejam todas as tarefas pendentes.
+Update (Atualizar): Os usuários podem marcar tarefas como concluídas ou atualizar os detalhes de uma tarefa existente por meio de um formulário de edição.
+Delete (Excluir): As tarefas concluídas ou não desejadas podem ser excluídas da lista, mantendo-a organizada.
+Fez sentido?
+
+@@09
+Faça como eu fiz: operações assíncronas e requisições em Swift
+
+Vamos colocar a mão na massa!
+1 - Entenda operações assíncronas: As operações assíncronas permitem que o programa continue sua execução sem aguardar a conclusão de uma tarefa. Em Swift, use a palavra-chave async para designar funções que operam assincronamente.
+
+2 - Realize uma requisição GET com async/await:
+
+a) Crie a função getAllSpecialists para obter uma lista de especialistas:
+func getAllSpecialists() async throws -> [Specialist]? { ... }
+COPIAR CÓDIGO
+b) Defina o endpoint e garanta que a URL seja válida.
+c) Use URLSession.shared.data(from: url) para fazer a requisição.
+d) Decodifique o JSON usando JSONDecoder.
+3 - Atualize a lista de especialistas:
+
+a) Instancie a classe de serviço: let service = WebService().
+b) Mantenha um estado para os especialistas: @State private var specialists: [Specialist] = [].
+c) Crie a função getSpecialists para obter os especialistas e atualizar o estado:
+func getSpecialists() async { ... }
+COPIAR CÓDIGO
+d) Use o modificador .onAppear para chamar getSpecialists assincronamente quando a view aparecer.
+4 - Baixe imagens assincronamente:
+
+a) Crie a função downloadImage que aceita uma URL e retorna uma UIImage:
+func downloadImage(from imageURL: String) async throws -> UIImage? { ... }
+COPIAR CÓDIGO
+b) Valide a URL e use URLSession.shared.data(from: url) para obter os dados da imagem.
+c) Converta os dados em UIImage.
+d) Mantenha um estado para a imagem: @State private var specialistImage: UIImage?.
+e) Crie uma função para baixar a imagem e atualizar o estado:
+func downloadImage() async { ... }
+COPIAR CÓDIGO
+f) Mostre a imagem, se disponível, ajustando-a conforme necessário.
+g) Use o modificador .onAppear para chamar downloadImage assincronamente quando a view aparecer.
+
+O uso de operações assíncronas e o paradigma async/await em Swift representam uma abordagem mais moderna e eficiente para lidar com tarefas que podem demorar algum tempo, como solicitações de rede. Além disso, a integração com SwiftUI facilita a atualização da UI de forma responsiva.
+O objetivo desta atividade é reforçar sua compreensão desses conceitos e garantir que você esteja confortável aplicando-os em seus próprios projetos.
+
+Você pode conferir o código do projeto até o momento através desta branch no GitHub.
+
+Se encontrar dificuldades, não hesite em buscar ajuda no fórum, discord ou quaisquer outros canais de suporte disponíveis!
+
+https://github.com/alura-cursos/swiftui-vollmed-crud/tree/aula-02
+
+@@10
+O que aprendemos?
+
+Nesta aula, você aprendeu a:
+Compreender as operações assíncronas e sua importância no desenvolvimento de apps;
+Criar sua primeira requisição GET utilizando Async/Await;
+Atualizar e exibir a lista de especialistas no app com o uso de variáveis de estado;
+Realizar o download e exibição de imagens de forma assíncrona.
+Maravilha! A base do nosso aplicativo está se formando.
+
+Vejo você na próxima aula!
