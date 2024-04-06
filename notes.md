@@ -1352,3 +1352,637 @@ Realizar o download e exibição de imagens de forma assíncrona.
 Maravilha! A base do nosso aplicativo está se formando.
 
 Vejo você na próxima aula!
+
+#### 06/04/2024
+
+@03-Layout da tela de agendamento
+
+@@01
+Projeto da aula anterior
+
+Você pode revisar o seu código e acompanhar o passo a passo do desenvolvimento do nosso projeto através desta branch no Github e, se preferir, pode baixar o projeto da aula anterior.
+Bons estudos!
+
+https://github.com/alura-cursos/swiftui-vollmed-crud/tree/aula-02
+
+https://github.com/alura-cursos/swiftui-vollmed-crud/archive/refs/heads/aula-02.zip
+
+@@02
+Criando a tela de agendamento de uma consulta
+
+Vamos começar a criar nossa tela de agendamento de consulta, pois quando a pessoa usuária clicar no botão "Agendar consulta", que está dentro de SpecialistCardView, ela será direcionada para essa tela.
+Criando a tela de agendamento de uma consulta
+Dentro da pasta "Views", vamos criar um novo arquivo. Então, clicamos com o botão direito sobre ela e vamos até "New File…". Selecionaremos a opção "SwiftUI View" e nomearemos o arquivo como ScheduleAppointmentView. Será criada a seguinte view:
+
+ScheduleAppointmentView.swift:
+import SwiftUI
+
+struct ScheduleAppointmentView: View {
+    var body: some View {
+        Text("Hello, World!")
+    }
+}
+
+#Preview {
+    ScheduleAppointmentView()
+}
+COPIAR CÓDIGO
+No lugar de "Hello, World!", vamos escrever "Agendamento da consulta" em um primeiro momento.
+
+Text("Agendamento da consulta")
+COPIAR CÓDIGO
+Criando a navegação
+Nós precisamos chamar a tela do SpecialistCardView, mas ainda não temos nenhuma NavigationView envolvendo nosso aplicativo, então, precisaremos fazer isso.
+
+Inicialmente, vamos ao arquivo VollmedApp.swift, e logo após o WindowGroup, vamos adicionar um bloco NavigationStack e mover o HomeView() para dentro dele.
+
+VollmedApp.swift:
+import SwiftUI
+
+@main
+struct VollmedApp: App {
+    var body: some Scene {
+        WindowGroup {
+            NavigationStack {
+                HomeView()
+            }
+        }
+    }
+}
+COPIAR CÓDIGO
+Se você já fez algum curso de SwiftUI na Alura, pode ter percebido que utilizamos NavigationView em vez de NavigationStack. A Apple fez algumas modificações em relação à navegação do SwiftUI e agora é uma boa prática utilizar NavigationStack.
+Agora já temos uma navegação envolvendo toda a nossa aplicação.
+
+Vamos voltar ao arquivo SpecialistCardView.swift e criar o NavigationLink na linha de código 48, para conseguirmos navegar para essa tela de agendamento. Selecionaremos a opção de NavigationLink com destination e label.
+
+SpecialistCardView.swift:
+NavigationLink {
+    code
+} label: {
+    code
+}
+COPIAR CÓDIGO
+A primeira parte será a tela de destino, que é ScheduleAppointmentView(), enquanto a label, ou seja, o que mostraremos para as pessoas usuárias, será o ButtonView(). Usaremos os atalhos para recortar este trecho da linha 55 para dentro de label.
+
+NavigationLink {
+    ScheduleAppointmentView()
+} label: {
+    ButtonView(text: "Agendar consulta")
+}
+COPIAR CÓDIGO
+Vamos verificar se está funcionando, usando o atalho "Command + R" para executar. Ao clicar em "Agendar consulta" no simulador, devemos navegar para a tela de agendamento.
+
+No simulador, temos um botão ("Back") de retornar para a tela anterior, que é o padrão de uma aplicação. No entanto, não vamos modificar esse botão. Caso tenha interesse, temos conteúdos na aqui Alura sobre como você pode criar um botão totalmente personalizado.
+Construindo a tela
+Retornando ao arquivo ScheduleAppointmentView.swift, vamos começar a construir a tela. Primeiro, vamos remover o Text() da linha 12 e adicionar uma VStack, um contêiner vertical, contendo um texto que será Text("Selecione a data e o horário da consulta").
+
+ScheduleAppointmentView.swift:
+// código omitido
+
+struct ScheduleAppointmentView: View {
+    var body: some View {
+        VStack {
+            Text("Selecione a data e o horário da consulta")
+        }
+    }
+}
+
+// código omitido
+COPIAR CÓDIGO
+Esse texto terá alguns modificadores de propriedades. Por exemplo: vamos definir a .font() como .title3. Também incluiremos .bold() e a cor do texto, ou seja, o .foregroundColor(). Porém, ele está depreciado, então precisaremos usar algo diferente.
+
+É comum que alguns modificadores estejam depreciados.
+Nesse caso, é informado que o .foregroundColor() será depreciado em uma futura versão do iOS, e no lugar dele precisamos utilizar o .foregroundStyle(). Passaremos para ele .accent, que é a nossa cor de destaque.
+
+Por fim, adicionaremos o modificador .padding() recebendo .top.
+
+struct ScheduleAppointmentView: View {
+    var body: some View {
+        VStack {
+            Text("Selecione a data e o horário da consulta")
+                .font(.title3)
+                .bold()
+                .foregroundStyle(.accent)
+                .padding(.top)
+        }
+    }
+}
+COPIAR CÓDIGO
+Utilizamos .foregroundColor() em alguns outros arquivos, então, vamos pesquisar por .foregroundColor() no ícone de pesquisa do menu esquerdo e substituiremos por .foregroundStyle(). Começaremos alterando em ButtonView.swift e depois em HomeView.swift.
+
+ButtonView.swift:
+var body: some View {
+    Text(text)
+        .bold()
+        .foregroundStyle(.white)
+        
+        // código omitido
+COPIAR CÓDIGO
+HomeView.swift:
+Text("Boas-vindas!")
+    .font(.title2)
+    .bold()
+    .foregroundStyle(Color(.lightBlue))
+Text("Veja abaixo os especialistas da Vollmed disponíveis e marque já a sua consulta!")
+    .font(.title3)
+    .bold()
+    .foregroundStyle(.accent)
+    
+    // código omitido
+COPIAR CÓDIGO
+De volta ao arquivo ScheduleAppointmentView.swift, já temos o texto. Vamos adicionar um .padding() após o fechamento do VStack.
+
+Nosso próximo passo será adicionar um calendário. Mas antes, vamos colocar também o modificador .multilineTextAlignment() em Text() para centralizar (.center) o texto.
+
+ScheduleAppointmentView.swift:
+struct ScheduleAppointmentView: View {
+    var body: some View {
+        VStack {
+            Text("Selecione a data e o horário da consulta")
+                .font(.title3)
+                .bold()
+                .foregroundStyle(.accent)
+                .multilineTextAlignment(.center)
+                .padding(.top)
+        }
+        .padding()
+    }
+}
+COPIAR CÓDIGO
+Construindo o calendário
+Vamos começar a construir o nosso calendário. A tela irá conter: um texto, o calendário e um botão para agendar uma consulta.
+
+O SwiftUI traz uma interface de calendário nativa, utilizando uma view chamada DatePicker(). Após os modificadores de propriedade, escreveremos DatePicker e selecionaremos a primeira opção, com titleKey e selection.
+
+O titleKey é simplesmente um texto, portanto, uma string que escreveremos como "Escolha a data da consulta". Em seguida, precisamos passar uma variável de estado, como Binding<>, para representar a data selecionada.
+
+Vamos criar essa variável na linha 12, declarando uma @State private var chamada selectedDate, que será do tipo Date, representando uma data. Iremos instanciar a classe Date(), e ao fazer isso, significa pegamos a data e a hora atual.
+
+Como precisamos passar essa variável como Binding<> para o DatePicker(), usaremos um cifrão, ou seja $selectedDate.
+
+@State private var selectedDate = Date()
+
+struct ScheduleAppointmentView: View {
+    var body: some View {
+        VStack {
+            Text("Selecione a data e o horário da consulta")
+                .font(.title3)
+                .bold()
+                .foregroundStyle(.accent)
+                .multilineTextAlignment(.center)
+                .padding(.top)
+
+            DatePicker("Escolha a data da consulta", selection: $selectedDate)
+        }
+        .padding()
+    }
+}
+COPIAR CÓDIGO
+Na visualização prévia, já é possível visualizar um tipo de calendário. Se clicarmos na data "Sep 13, 2023", por exemplo, é aberto um pop-up com um calendário. Além disso, se clicarmos no horário, os horários também aparecem.
+
+Existem diversos modos de apresentação de um calendário. Com um modificador chamado .datePickerStyle(), conseguimos selecionar algumas opções. A que a instrutora recomenda para esse caso é a .graphical, que dá uma interface de calendário de maneira completa e visível, além de ser possível selecionar a hora.
+
+DatePicker("Escolha a data da consulta", selection: $selectedDate)
+    .datePickerStyle(.graphical)
+COPIAR CÓDIGO
+Adicionando um botão
+Por fim, faremos mais duas coisas. A primeira é adicionar um botão logo após o DatePicker(). Para isso, escrevemos Button e selecionamos a opção com action e label. Dentro da action, vamos escrever print("Botão pressionado"), enquanto a label será ButtonView(), para o qual passaremos como text "Agendar consulta".
+
+Button(action: {
+    print("Botão pressionado!")
+}, label: {
+    ButtonView(text: "Agendar consulta")
+})
+COPIAR CÓDIGO
+Adicionando modificadores
+Em seguida, logo após o .padding(), vamos adicionar alguns modificadores relacionados à navegação. Assim, será possível adicionar o título na navegação. Isso ficará evidente quando executarmos o aplicativo. Escreveremos .navigationTitle() e passaremos "Agendar consulta".
+
+struct ScheduleAppointmentView: View {
+    var body: some View {
+        VStack {
+            Text("Selecione a data e o horário da consulta")
+                .font(.title3)
+                .bold()
+                .foregroundStyle(.accent)
+                .multilineTextAlignment(.center)
+                .padding(.top)
+
+            DatePicker("Escolha a data da consulta", selection: $selectedDate)
+                .datePickerStyle(.graphical)
+
+            Button(action: {
+                print("Botão pressionado!")
+            }, label: {
+                ButtonView(text: "Agendar consulta")
+            })
+        }
+        .padding()
+        .navigationTitle("Agendar consulta")
+    }
+}
+COPIAR CÓDIGO
+Vamos executar o aplicativo com o atalho "Command + R". O texto "Agendar consulta" agora aparece no topo do simulador. Para deixá-lo um pouco maior, podemos adicionar outro modificador chamado .navigationBarTitleDisplayMode() e passar para ele .large.
+
+.padding()
+.navigationTitle("Agendar consulta")
+.navigationBarTitleDisplayMode(.large)
+COPIAR CÓDIGO
+Conclusão
+Agora que temos a tela de agendamento criada, precisamos lidar com a formatação de datas para enviar corretamente para o back-end.
+
+Nos encontramos no próximo vídeo!
+
+@@03
+Mão na massa: lidando apenas com datas futuras
+
+O objetivo deste desafio é modificar o seletor de datas na tela de agendamento de consulta para permitir que o usuário escolha apenas datas no futuro, impedindo a seleção de datas anteriores ao dia atual.
+Veja uma imagem de como deve ser o resultado final:
+
+Imagem que mostra um menu seletor de datas de um calendário
+
+Dicas:
+
+A classe DatePicker do SwiftUI tem uma propriedade chamada in que você pode usar para definir o intervalo de datas disponíveis;
+Você pode obter a data atual usando Date();
+Combine Date() com a propriedade in do DatePicker para restringir as seleções apenas para datas futuras.
+Bom desafio! Qualquer dúvida, não deixe de nos procurar no fórum ou no discord!
+
+Você pode conferir como solucionei essa tarefa no GitHub!
+
+https://github.com/alura-cursos/swiftui-vollmed-crud/commit/2153f8d37dd5913fce0cd15e2ff90b4dcb72a1a5
+
+@@04
+Mão na massa: mostrando os horários de 15 em 15 minutos
+
+O objetivo deste desafio é modificar o seletor de datas e horários na tela de agendamento para permitir que o usuário escolha horários em intervalos de 15 minutos (por exemplo, 9:00, 9:15, 9:30, 9:45...).
+Veja uma imagem de como deve ficar o resultado final:
+
+Imagem que mostra um menu seletor de horário em que os minutos são divididos em 15 minutos
+
+Dica:
+
+Você pode utilizar o UIDatePicker para alterar a propriedade relacionada ao intervalo de minutos.
+Vamos lá? Qualquer dúvida, manda pra gente no fórum ou no discord!
+
+Você pode conferir como solucionei essa tarefa no GitHub!
+
+https://github.com/alura-cursos/swiftui-vollmed-crud/commit/5cb5e0538f1c55be29ea3b53af2ba196cb46e0ba
+
+@@05
+Formatando datas no Swift para enviar ao back-end
+
+Antes de começarmos a falar sobre formatação de datas, queremos mencionar que adicionamos os códigos dos desafios que propusemos para você.
+Na linha 23 do arquivo ScheduleAppointmentView.swift, em in: Date(), a instância da classe seguida de três pontos significa que serão mostradas somente datas futuras no calendário.
+
+ScheduleAppointmentView.swift:
+DatePicker("Escolha a data da consulta", selection: $selectedDate, in: Date()...)
+    .datePickerStyle(.graphical)
+COPIAR CÓDIGO
+Da linha 35 até a 37, definimos que o intervalo de minutos é de 15.
+
+.onAppear {
+    UIDatePicker.appearance().minuteInterval = 15
+}
+COPIAR CÓDIGO
+Formatando datas para envio para API
+Agora vamos falar sobre formatação de data. Vamos abrir o Insomnia para mostrar como fazer a requisição para criar uma consulta do tipo POST.
+
+Enviamos um arquivo JSON com alguns atributos. O primeiro é o campo especialista, que possui o ID do especialista. O segundo é o paciente, que possui um ID do paciente. E o terceiro é o atributo data, que representa a data selecionada no calendário.
+
+Essa data é do tipo string. Portanto, nela temos o ano, o mês e também o dia, separados por hifens. Depois temos uma letra "T" separando a data do horário. Como horário, temos 10 horas e 15 minutos. Em seguida, os segundos "00", e por fim, ".000", que representa os milissegundos.
+
+{
+  "especialista": "4594d93e-6459-4a1d-b3a9-03ca32d344dc",
+  "paciente": "b25aa67b-203e-4a79-b0e0-3f5c560cd317",
+  "data": "2023-10-16T10:15:00.000"
+}
+COPIAR CÓDIGO
+Precisamos converter a nossa variável de estado selectedDate, que é do tipo Date, para uma string que seja representada dessa forma.
+
+De volta ao projeto no Xcode, na pasta "Vollmed", vamos criar uma nova pasta chamada "Extensions". Nesta pasta, criaremos um novo arquivo. Portanto, vamos clicar em "New File… > Swift File", e nomearemos este arquivo como Date+, pois ao falarmos sobre extensões, é uma boa prática nomear os arquivos com este símbolo de mais (+).
+
+Começaremos escrevendo extension Date. Vale lembrar que extension é uma funcionalidade da linguagem Swift que permite estender funcionalidades a tipos de dados já existentes na própria linguagem Swift, no próprio framework, ou até mesmo tipos de dados que criamos. Nesse caso, criamos uma extensão usando a classe Date da própria linguagem Swift.
+
+Date+.swift:
+import Foundation
+
+extension Date {
+
+}
+COPIAR CÓDIGO
+No escopo de Date, vamos criar uma função (func) chamada convertToString(). Ela não receberá nenhum parâmetro e retornará uma string.
+
+extension Date {
+    func convertToString() -> String {
+    
+    }
+}
+COPIAR CÓDIGO
+Quando falamos sobre formatação de datas, usamos uma classe chamada dateFormatter. Portanto, no escopo da função convertToString(), criaremos uma constante (let) chamada dateFormatter que será igual a DateFormatter(), ou seja, instanciamos a classe.
+
+extension Date {
+    func convertToString() -> String {
+        let dateFormatter = DateFormatter()
+    }
+}
+COPIAR CÓDIGO
+Agora, precisamos especificar qual formato queremos converter. Para isso, vamos escrever na linha abaixo dateFormatter.dateFormat, que será igual a uma string.
+
+O formato deve ser igual ao que vimos no Insomnia, composto por ano ("yyyy"), mês ("MM") e dia ("dd"), separados por hifens. Depois uma letra "T", que separa a data da hora. Por fim, temos a hora ("HH"), os minutos ("mm"), os segundos ("ss"), os milissegundos ("SSS"), e uma letra "Z".
+
+O "Z" representa o deslocamento do fuso horário, portanto, precisamos passá-lo para o back-end compreender qual é o fuso horário.
+Por último, vamos escrever return dateFormatter.string(from: self), já que isso é uma extensão. O self representa a instância do tipo Date.
+
+extension Date {
+    func convertToString() -> String {
+        let dateFormatter = DateFormatter()
+        dateFormatter.dateFormat = "yyyy-MM-dd'T'HH:mm:ss.SSSZ"
+        return dateFormatter.string(from: self)
+    }
+}
+COPIAR CÓDIGO
+Vamos retornar ao arquivo ScheduleAppointmentView.swift. Na linha 27, onde temos print("Botão pressionado!"), substituiremos por print(selectedDate.convertToString()).
+
+ScheduleAppointmentView.swift:
+Button(action: {
+    print(selectedDate.convertToString())
+}, label: {
+    ButtonView(text: "Agendar consulta")
+})
+COPIAR CÓDIGO
+Agora, a função convertToString() criada na extensão faz parte do objeto do tipo Date, por isso podemos chamá-lo diretamente. Vamos executar o aplicativo com "Command + R".
+
+No simulador, iremos clicar em "Agendar consulta", selecionar o dia 21 de setembro e escolher 1 hora da tarde, por exemplo. Finalizado o agendamento, teremos no console a data formatada corretamente ("2023-09-21T13:00:00.000-0300").
+
+No final, aparece "-0300", que é de fato o fuso horário.
+Conclusão
+Assim, já podemos enviar para o nosso back-end!
+
+@@06
+Formatando datas no Swift para um formato legível
+
+Ainda falando sobre formatação de datas, vamos construir posteriormente uma tela que mostrará todas as consultas de um paciente. Nessa tela, seria interessante mostrar também o horário da consulta, mas não podemos usar a formatação que acabamos de criar com a função convertToString() na extensão Date, afinal, isso não é legível para a pessoa usuária.
+Portanto, precisamos criar uma nova função de formatação que possa exibir uma data compreensível, como "21 de setembro de 2023, às 13 horas".
+
+Formatando datas para a pessoa usuária
+Começaremos criando um novo arquivo no diretório "Extensions", que será do tipo Swift File. Criaremos uma extensão chamada String+.swift.
+
+Dentro desse arquivo, vamos definir uma extension chamada String, estendendo do tipo de dados já existente String. Em seguida, vamos definir uma função nesta extensão.
+
+Vamos chamar essa função de convertDateStringToReadableDate(). Ela não receberá nenhum parâmetro, mas retornará uma String.
+
+String+.swift:
+import Foundation
+
+extension String {
+    func convertDateStringToReadableDate() -> String {
+    
+    }
+}
+COPIAR CÓDIGO
+É sempre importante tentar usar nomes descritivos para as funções e variáveis. Portanto, não há problema em ter nomes longos, contanto que sejam descritivos.
+Essa função será um pouco mais complexa. Estamos trabalhando com uma string que será nossa entrada, a qual queremos transformar em uma data. A partir dessa data, iremos formatá-la para uma nova string. Começaremos a implementar essa função agora.
+
+A primeira coisa que faremos será definir uma constante chamada inputFormatter, que será uma instância de DateFormatter().
+
+Na linha abaixo, vamos definir que inputFormatter.dateFormat será igual a uma string que pegaremos do arquivo Date+.swift. Essa string é o formato que enviamos para o back-end, na linha 13, e na função convertDateStringToReadableDate() iremos recebê-la.
+
+extension String {
+    func convertDateStringToReadableDate() -> String {
+        let inputFormatter = DateFormatter()
+        inputFormatter.dateFormat = "yyyy-MM-dd'T'HH:mm:ss.SSSZ"
+    }
+}
+COPIAR CÓDIGO
+Agora, precisamos converter essa string em uma data. Isso retornará uma opcional, então vamos desembrulhar essa variável. Para isso, escreveremos que if let date é igual a inputFormatter.date(), sendo que date() recebe from: self.
+
+extension String {
+    func convertDateStringToReadableDate() -> String {
+        let inputFormatter = DateFormatter()
+        inputFormatter.dateFormat = "yyyy-MM-dd'T'HH:mm:ss.SSSZ"
+
+        if let date = inputFormatter.date(from: self) {
+        
+        }
+    }
+}
+COPIAR CÓDIGO
+No arquivo Date+.swift, fizemos algo semelhante, mas convertíamos em uma string. Neste caso, estamos convertendo para uma data.
+
+Dentro dessa condicional, precisamos converter essa data em uma string legível. Primeiramente, vamos definir uma variável chamada dateFormatter e instanciar novamente DateFormatter().
+
+Na linha seguinte, vamos escrever dateFormatter.dateFormat, que receberá uma string que define como queremos formatar a data: "dd/MM/yyyy 'às' HH:mm". Isso produzirá datas como "21 de setembro de 2023 às 13:00".
+
+Por fim, retornamos a data formatada (return dateFormatter.string(from: date)). Se o bloco if falhar por algum motivo, simplesmente retornaremos uma string vazia (return "").
+
+extension String {
+    func convertDateStringToReadableDate() -> String {
+        let inputFormatter = DateFormatter()
+        inputFormatter.dateFormat = "yyyy-MM-dd'T'HH:mm:ss.SSSZ"
+
+        if let date = inputFormatter.date(from: self) {
+            let dateFormatter = DateFormatter()
+            dateFormatter.dateFormat = "dd/MM/yyyy 'às' HH:mm"
+            return dateFormatter.string(from: date)
+        }
+        
+        return ""
+    }
+}
+COPIAR CÓDIGO
+Se ocorrer algum erro na conversão de data, será porque a string fornecida é inválida. Por exemplo: se fornecermos a string "Giovanna", o programa não entenderá como uma data e ocorrerá um erro, fazendo com que a linha 21 seja executada e retorne uma string vazia.
+Retornando ao arquivo ScheduleAppointmentView.swift, na linha 27, onde temos print(selectedDate.convertToString()), a data é convertida para uma string que podemos visualizar no console. Queremos converter essa string em uma data legível. Para isso, vamos chamar o método .convertDateStringToReadableDate().
+
+ScheduleAppointmentView.swift:
+Button(action: {
+    print(selectedDate.convertToString().convertDateStringToReadableDate())
+}, label: {
+    ButtonView(text: "Agendar consulta")
+})
+COPIAR CÓDIGO
+Vamos executar esse código para conferir se conseguimos. Simularemos o agendamento de uma consulta: escolheremos o dia 22 de setembro e o horário de 7:30 da noite. Ao clicar em "Agendar consulta", teremos no console a data formatada de maneira legível ("22/09/2023 às 19:30"), compreensível para a pessoa usuária.
+
+Conclusão
+Já temos funções para conversão de datas! Embora elas possam parecer um pouco complexas inicialmente, com prática tudo fica mais evidente. Agora, vamos prosseguir com a criação dos modelos de requisição e resposta ao agendar uma consulta.
+
+@@07
+Formatando datas corretamente
+
+Ao desenvolver um recurso que permita ao paciente agendar uma consulta com um especialista, você precisa garantir que a data e hora escolhidas sejam formatadas corretamente para a requisição de agendamento.
+Dadas as funções de extensão fornecidas e o modelo de requisição, como você modificaria o botão "Agendar consulta" para realizar corretamente este agendamento? Selecione os trechos de código corretos:
+
+Usar selectedDate.convertToString().convertDateStringToReadableDate() e enviar o resultado para o backend.
+ 
+A função convertDateStringToReadableDate() converte uma string de data no formato "yyyy-MM-dd'T'HH:mm:ss.SSSZ" para o formato "dd/MM/yyyy 'às' HH:mm", o que não é o formato esperado pelo backend.
+Alternativa correta
+Usar selectedDate.convertToString() e enviar diretamente a data formatada em conjunto com outros detalhes da consulta ao back-end.
+ 
+Certo! O nosso back-end indica que a data deve ser fornecida no formato "yyyy-MM-dd'T'HH:mm:ss.SSSZ". A extensão convertToString() do tipo Date faz exatamente essa conversão. Portanto, após obter a data no formato correto, ela pode ser enviada ao backend juntamente com outros detalhes da consulta.
+Alternativa correta
+Converter a data selecionada para o formato "dd/MM/yyyy 'às' HH:mm" e, em seguida, converter esse resultado novamente para "yyyy-MM-dd'T'HH:mm:ss.SSSZ" antes de enviar para o backend.
+ 
+Na verdade, esta é uma abordagem ineficiente e não é necessária. A data já pode ser convertida diretamente para o formato necessário usando a função convertToString(). Consequentemente, não há necessidade de realizar duas conversões.
+Alternativa correta
+Armazenar a data selecionada como está, sem fazer nenhuma conversão, e enviá-la para que o back-end faça a conversão necessária.
+ 
+O back-end espera um formato específico de data, conforme indicado pelo modelo ScheduleAppointmentRequest. Confiar no back-end para fazer a conversão pode levar a erros ou ambiguidades.
+
+@@08
+Criando modelos de requisição e resposta
+
+Primeiramente, vamos entender o que enviaremos para a requisição POST quando formos criar uma consulta, e o que essa requisição retorna.
+Criando modelos de requisição e resposta
+Pela primeira vez, não executamos mais uma requisição GET, na qual buscamos dados, mas sim uma requisição com o verbo POST, que significa enviar dados. Por isso, enviamos o JSON com alguns atributos.
+
+Se tentarmos enviar essa requisição, ocorrerá um erro, porque o ID do especialista e o ID do paciente não existem. Eles são de uma requisição anterior, são apenas modelos.
+
+Pegaremos o ID de um especialista que existe. Para isso, vamos até a rota "Retorna todos os especialistas", executamos a requisição e copiamos o ID de "Dr. João da Silva", por exemplo.
+
+Com o ID copiado, voltamos na requisição "Cria uma consulta" e colamos no campo especialista.
+
+Em seguida, para o ID do paciente, vamos à requisição "Todos os pacientes", executamos em "Send", e vamos pegar, por exemplo, o ID do paciente "Lucas". Após copiar, retornamos na requisição "Cria uma consulta" e colamos no campo paciente.
+
+A data será mantida como "2023-10-16", porque ainda não estamos no dia 16 de outubro, mas se você estiver assistindo a este curso em outra data, pode ser interessante atualizá-la.
+{
+  "especialista": "b6156d16-8329-4690-980c-eb3b30eaa585",
+  "paciente": "e34db020-3445-4fbf-a744-ba578754da04",
+  "data": "2023-10-16T10:15:00.000"
+}
+COPIAR CÓDIGO
+Após enviar, a consulta deverá ser criada com sucesso, obtendo o status code 200, significando que foi bem-sucedido. Ela nos retorna o ID do especialista, o ID do paciente, a data, e o campo motivoCancelamento, que atualmente é nulo, mas usaremos quando formos cancelar uma consulta. Por fim, também é retornado o ID da consulta.
+
+Portanto, nesta requisição POST, enviamos e recebemos dados. Por essa razão, vamos criar dois modelos de dados diferentes, um para a requisição, que chamaremos de request, e outro para a resposta dessa requisição, que chamaremos de response.
+
+Criando os modelos de dados
+Voltaremos para o Xcode e dentro da pasta "Models", criaremos um novo arquivo do tipo Swift File, que vamos renomear como ScheduleAppointment.
+
+Nesse arquivo, vamos criar os modelos de dados. Começaremos criando o modelo para a requisição. Para isso, criaremos uma struct chamada ScheduleAppointmentRequest, que irá aderir ao protocolo Codable para conseguirmos tanto decodificar os dados em JSON quanto codificá-los.
+
+ScheduleAppointment.swift:
+import Foundation
+
+struct ScheduleAppointmentRequest: Codable {
+
+}
+COPIAR CÓDIGO
+Você poderia usar o Encodable, pois vamos converter isso para JSON, mas o Codable inclui tanto o encode quanto o decode, então optamos por utilizá-lo.
+No escopo de ScheduleAppointmentRequest, criaremos três atributos: o primeiro let specialist, do tipo String; o segundo let patient, também do tipo String; e o terceiro let date, também do tipo String.
+
+struct ScheduleAppointmentRequest: Codable {
+    let specialist: String
+    let patient: String
+    let date: String
+}
+COPIAR CÓDIGO
+Porém, analisando o Insomnia, enviamos os atributos em português, então precisamos converter para evitar qualquer erro. De volta ao Xcode, criaremos na linha 15 o enum CodingKeys, cujos valores serão do tipo String. Ele irá aderir a outro protocolo chamado CodingKey, para identificar que ele faz o mapeamento das chaves.
+
+struct ScheduleAppointmentRequest: Codable {
+    let specialist: String
+    let patient: String
+    let date: String
+    
+    enum CodingKeys: String, CodingKey {
+    
+    }
+}
+COPIAR CÓDIGO
+Dentro desse enum, criaremos um case chamado specialist, que será igual a especialista, nome da chave enviada para a API. Na linha abaixo, criaremos outro case chamado patient, que será igual a paciente. Por fim, criaremos o case date, que será igual a data.
+
+enum CodingKeys: String, CodingKey {
+    case specialist = "especialista"
+    case patient = "paciente"
+    case date = "data"
+}
+COPIAR CÓDIGO
+Temos o modelo de requisição criado com sucesso. Agora, vamos criar o modelo da resposta. Para isso, criaremos na linha 10, acima da primeira struct, outra struct chamada ScheduleAppointmentResponse, que também irá aderir ao tipo Codable, e além disso, ao tipo Identifiable, pois ele retorna um ID, isto é, um identificador único.
+
+struct ScheduleAppointmentResponse: Codable, Identifiable {
+
+}
+COPIAR CÓDIGO
+Com isso, o programa reporta um erro quando não adicionamos a propriedade id, pois, nesse caso, não estaria em conformidade com o protocolo Identifable, que exige um atributo id. Portanto, vamos começar escrevendo let id, que será do tipo String.
+
+Em seguida, vamos declarar let specialist, que também será do tipo String, bem como let patient e let date. Na linha abaixo, vamos chamar o motivo do cancelamento de reasonToCancel, que será do tipo String, porém opcional, ou seja, String?.
+
+Novamente, vamos criar o enum CodingKeys para mapear as nossas chaves. Dentro desse CodingKeys, começaremos escrevendo case id. Como o ID não vai mudar, ele é id tanto no modelo de dados quanto no JSON, então vamos simplesmente mantê-lo dessa forma.
+
+Continuaremos com case specialist, que é igual a especialista; com case patient, igual a paciente; case date igual a data; e reasonToCancel igual a motivoCancelamento.
+
+struct ScheduleAppointmentResponse: Codable, Identifiable {
+    let id: String
+    let specialist: String
+    let patient: String
+    let date: String
+    let reasonToCancel: String?
+    
+    enum CodingKeys: String, CodingKey {
+        case id
+        case specialist = "especialista"
+        case patient = "paciente"
+        case date = "data"
+        case reasonToCancel = "motivoCancelamento"
+    }
+}
+COPIAR CÓDIGO
+Você pode pensar o seguinte: como o ID não muda, poderíamos simplesmente removê-lo. No entanto, não podemos fazer isso; precisamos mapear todas as propriedades. Portanto, mesmo que ele não mude, devemos mantê-lo dentro do enum CodingKeys.
+Conclusão
+Agora que já temos nosso modelo criado, vamos começar a implementar a requisição de fato. Te esperamos no próximo vídeo!
+
+@@09
+Faça como eu fiz: preparando o terreno para agendar uma consulta
+
+Está na hora de colocar seus conhecimentos em prática!
+Vamos construir a tela de agendamento de consulta? Siga os passos a seguir:
+
+1 - Criando a tela de agendamento de uma consulta:
+
+a) Crie a view de agendamento:
+struct ScheduleAppointmentView: View { ... }
+COPIAR CÓDIGO
+b) Use o DatePicker para permitir que o usuário selecione a data da consulta;
+c) Utilize a ButtonView para criar um botão de ação;
+d) Adicione um link de navegação para a tela de agendamento:
+NavigationLink {
+    ScheduleAppointmentView()
+} label: {
+    ButtonView(text: "Agendar consulta")
+}
+COPIAR CÓDIGO
+2 - Formatando datas para envio ao back-end:
+
+a) Crie uma extensão da classe Date para converter a data em uma String formatada:
+extension Date {
+    func convertToString() -> String { ... }
+}
+COPIAR CÓDIGO
+3 - Formatando datas para um formato legível:
+
+a) Estenda a classe String para converter uma data em formato de String para uma representação legível:
+        extension String {
+            func convertDateStringToReadableDate() -> String { ... }
+        }
+COPIAR CÓDIGO
+4 - Modelando requisição e resposta:
+
+a) Crie estruturas para representar a resposta e a solicitação de agendamento:
+struct ScheduleAppointmentResponse: Codable, Identifiable { ... }
+
+struct ScheduleAppointmentRequest: Codable { ... }
+COPIAR CÓDIGO
+Bons estudos!
+
+Agora que preparamos o terreno para agendar uma consulta de fato, podemos seguir e implementar a requisição POST para enviar ao back-end!
+Verifique o progresso e o código do projeto até o momento no link para a branch no GitHub.
+
+Caso tenha dúvidas ou encontre desafios, lembre-se de que estamos aqui para ajudar! Entre em contato através do fórum, discord ou qualquer outro canal de suporte disponível.
+
+https://github.com/alura-cursos/swiftui-vollmed-crud/tree/aula-03
+
+@@10
+O que aprendemos?
+
+Nesta aula, você aprendeu a:
+Construir a tela de agendamento de uma consulta;
+Formatar datas no Swift, tanto para envio ao back-end quanto para exibição amigável ao usuário;
+Criar e utilizar modelos para estruturar requisições e respostas.
+Bom trabalho!
