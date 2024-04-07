@@ -1986,3 +1986,1002 @@ Construir a tela de agendamento de uma consulta;
 Formatar datas no Swift, tanto para envio ao back-end quanto para exibição amigável ao usuário;
 Criar e utilizar modelos para estruturar requisições e respostas.
 Bom trabalho!
+
+#### 07/04/2024
+
+@04-Requisição POST
+
+@@01
+Projeto da aula anterior
+
+Você pode revisar o seu código e acompanhar o passo a passo do desenvolvimento do nosso projeto através desta branch no Github e, se preferir, pode baixar o projeto da aula anterior.
+Bons estudos!
+
+https://github.com/alura-cursos/swiftui-vollmed-crud/tree/aula-03
+
+https://github.com/alura-cursos/swiftui-vollmed-crud/archive/refs/heads/aula-03.zip
+
+@@02
+Implementando a requisição POST
+
+Vamos começar criando uma função para realizar uma requisição do tipo POST.
+Preparando a Função de Requisição POST
+Dentro da estrutura WebService, criaremos uma função chamada scheduleAppointment(). Esta função receberá alguns parâmetros: specialistID; PatientID; e date. Os três são do tipo string.
+
+private let baseURL = "http://localhost:3000"
+
+func scheduleAppoitment(specialistID: String, patientID: String, date: String)
+COPIAR CÓDIGO
+Poderíamos fazer diferente, por exemplo, enviar um único parâmetro do tipo ScheduleAppointmentRequest, não haveria problema algum. Porém, vamos manter esses três parâmetros, que são poucos, e instanciamos a nossa estrutura aqui mesmo, dentro da função.
+
+Marcaremos esta função como async throw, assim como em todas as outras funções que fizemos, e o retorno será ScheduleAppointmentResponse, uma opcional, ?.
+
+private let baseURL = "http://localhost:3000"
+
+func scheduleAppoitment(specialistID: String, patientID: String, date: String) async
+     throws -> ScheduleAppointmentResponse? {
+COPIAR CÓDIGO
+Organizando a Estrutura da Requisição
+Vamos iniciar criando uma constante endpoint que é igual a baseURL, e a nossa rota para criar uma consulta é, simplesmente, "/consulta".
+
+private let baseURL = "http://localhost:3000"
+
+func scheduleAppoitment(specialistID: String, patientID: String, date: String) async
+     throws -> ScheduleAppointmentResponse? {
+         let endpoint = baseURL + "/consulta"
+COPIAR CÓDIGO
+Agora, vamos tratar o endpoint para transformá-lo em uma url, então, guard let url será igual a url, passando string, endpoint. Em seguida, passaremos um else. Se ocorrer algum erro, então print("Erro na URL e return nil.
+
+private let baseURL = "http://localhost:3000"
+
+func scheduleAppoitment(specialistID: String, patientID: String, date: String) async
+     throws -> ScheduleAppointmentResponse? {
+     let endpoint = baseURL + "/consulta"
+         
+         guard let url = URL(string: endpoint) else {
+         return nil
+         
+         }
+COPIAR CÓDIGO
+O próximo passo é instanciar a nossa estrutura, que é o ScheduleAppointmentRequest, passando os parâmetros que foram recebidos.
+
+func scheduleAppointment(specialistID: String,
+                             patientID: String,
+                             date: String) async throws -> ScheduleAppointmentResponse? {
+        let endpoint = baseURL + "/consulta"
+        
+        guard let url = URL(string: endpoint) else {
+            print("Erro na URL!")
+            return nil
+        }
+        
+        let appointment = ScheduleAppointmentRequest(specialist: specialistID, patient: patientID, date: date)
+COPIAR CÓDIGO
+Recebemos três parâmetros, um número considerável, por isso é bom organizarmos melhor a identação do código. Antes do patientID, e do date, apertaremos "Enter", adicionando uma quebra de linha para que um parâmetro fique embaixo do outro.
+
+
+ func scheduleAppointment(specialistID: String,
+                             patientID: String,
+                             date: String) async throws -> ScheduleAppointmentResponse? {
+        let endpoint = baseURL + "/consulta"
+        
+        guard let url = URL(string: endpoint) else {
+            print("Erro na URL!")
+            return nil
+        }
+COPIAR CÓDIGO
+Em seguida, criaremos uma nova constante chamada appointment, que será igual a ScheduleAppointmentRequest, e passarei esses três parâmetros, SpecialistID para o Specialist, PatientID para o Patient, Date para o Date.
+
+func scheduleAppointment(specialistID: String,
+                             patientID: String,
+                             date: String) async throws -> ScheduleAppointmentResponse? {
+        let endpoint = baseURL + "/consulta"
+        
+        guard let url = URL(string: endpoint) else {
+            print("Erro na URL!")
+            return nil
+        }
+        
+        let appointment = ScheduleAppointmentRequest(specialist: specialistID, patient: patientID, date: date)
+COPIAR CÓDIGO
+Codificação dos Dados para JSON
+Agora, precisamos converter a variável Appointment em um JSON, pois quando fazemos uma requisição POST, enviamos um JSON. Da mesma maneira que utilizamos o JSONDecoder() para decodificar dados, existe também o JSONEncoder() para codificar os dados e transformá-los em JSON.
+
+Então, vamos fazer isso! Criaremos uma constante chamada jsonData, que será igual a try, porque isso pode lançar um erro. Seguindo, passaremos JSONEncoder().encode() e appointment como parâmetro.
+
+ func scheduleAppointment(specialistID: String,
+                             patientID: String,
+                             date: String) async throws -> ScheduleAppointmentResponse? {
+        let endpoint = baseURL + "/consulta"
+        
+        guard let url = URL(string: endpoint) else {
+            print("Erro na URL!")
+            return nil
+        }
+        
+        let appointment = ScheduleAppointmentRequest(specialist: specialistID, patient: patientID, date: date)
+        
+        let jsonData = try JSONEncoder().encode(appointment)
+COPIAR CÓDIGO
+Configurando a Requisição POST
+Assim, realizamos a conversão para JSON. Seguindo, vamos criar a nossa requisição de fato. Ela será um pouco diferente da requisição GET, porque é do tipo POST, além disso, precisamos passar o jsonData como o corpo da nossa requisição e adicionar um cabeçalho.
+
+Começaremos criando uma variável chamada Request que será igualada a uma URLRequest. Em seguida, vamos abrir parênteses, escolher a opção com url:, e passar a variável url, ou seja: url: url.
+
+O request possui alguns métodos e atributos. Então, vamos escrever request.httpMethod, que é o método HTTP, no caso, o POST. Então, vamos passar "POST" para definir qual é o método HTTP dessa requisição.
+
+func scheduleAppointment(specialistID: String,
+                             patientID: String,
+                             date: String) async throws -> ScheduleAppointmentResponse? {
+        let endpoint = baseURL + "/consulta"
+        
+        guard let url = URL(string: endpoint) else {
+            print("Erro na URL!")
+            return nil
+        }
+        
+        let appointment = ScheduleAppointmentRequest(specialist: specialistID, patient: patientID, date: date)
+        
+        let jsonData = try JSONEncoder().encode(appointment)
+        
+        var request = URLRequest(url: url)
+        request.httpMethod = "POST"
+COPIAR CÓDIGO
+Também adicionaremos um cabeçalho. Para isso, utilizaremos o método setValue. Mas por que estamos adicionando esse cabeçalho? O cabeçalho ou header são informações úteis da nossa requisição.
+
+Se retornarmos ao Insomnia, logo quando fazemos um POST para uma consulta, temos uma parte de headers. Quando clicamos nesses headers, encontramos um atributo, contentType, com o valor application/json, definindo que os dados que estamos enviando são do tipo JSON.
+
+Precisamos adicionar isso em nossa requisição também, para que o back-end realize o tratamento de forma correta.
+
+De volta ao webService, o valor será "application", portanto, adicionaramos uma string, application/json. Para qual cabeçalho ou campo do cabeçalho? O "Content-Type".
+
+// Código omitido 
+
+  var request = URLRequest(url: url)
+        request.httpMethod = "DELETE"
+        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+
+}
+
+// Código omitido. 
+COPIAR CÓDIGO
+Para consultar o arquivo webService, basta acessar o GitHub do curso
+Envio da Requisição e Decodificação da Resposta
+Por fim, precisamos enviar o corpo da requisição, a "JSON data". Vamos escrever: request.httpBody = jsonData.
+
+// Código omitido. 
+
+ var request = URLRequest(url: url)
+        request.httpMethod = "DELETE"
+        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        request.httpBody = jsonData
+        
+// Código omitido. 
+COPIAR CÓDIGO
+A parte de chamar a requisição em si é bem similar ao que já fizemos. Vamos escrever:
+
+let (_, response) = try await URLSession.shared.data(for: request)
+COPIAR CÓDIGO
+Hora de decodificar esses dados:
+
+let (_, response) = try await URLSession.shared.data(for: request)
+let appointmentResponse = try JSONDecoder().decode(ScheduleAppointmentResponse.self, from: data)
+COPIAR CÓDIGO
+Por fim, devemos retornar os dados decodificados:
+
+let (_, response) = try await URLSession.shared.data(for: request)
+let appointmentResponse = try JSONDecoder().decode(ScheduleAppointmentResponse.self, from: data)
+
+return appointmentResponse
+
+}
+COPIAR CÓDIGO
+Próximos passos
+Dessa forma, temos nossa requisição criada. Ainda não testamos, mas, esperamos que ela esteja funcionando. No próximo vídeo, chamaremos, efetivamente, essa função ScheduleAppointment na nossa ScheduleAppointmentView.
+
+Até mais!!
+
+@@03
+Chamando a função para realizar o agendamento
+
+Agora, precisamos chamar a função ScheduleAppointment dentro do nosso WebService, na nossa View que está em ScheduleAppointmentView. Mas, onde vamos chamar essa função? Logo após o usuário clicar no botão de agendar consulta.
+Organizando a Estrutura da Requisição
+Começaremos criando uma instância de WebService, ou seja, led service = webService. Também criaremos uma função chamada scheduleAppointment(), que será assíncrona.
+
+import SwiftUI
+
+struct ScheduleAppointmentView: View {
+    
+    let service = WebService()
+    
+        @State private var selectedDate = Date()
+        
+        func scheduleAppointment() async {
+        }
+COPIAR CÓDIGO
+Dentro da ação do botão, vamos remover o print(), escrever Task, inserindo o contexto assíncrono e, então, chamaremos await scheduleAppointment.
+
+Button(action: {
+    Task {
+            await scheduleAppointment()
+        }
+COPIAR CÓDIGO
+Na função ScheduleAppointment(), começaremos criando o do e o catch.
+
+@State private var selectDate = Date()
+
+func scheduleAppointment() async {
+    do {
+        
+        } catch {
+        
+        }
+ }
+COPIAR CÓDIGO
+Dentro do catch, simplesmente escreveremos print("Ocorreu um erro ao agendar consulta: ", e faremos uma interpolação da variável error.
+
+@State private var selectDate = Date()
+
+func scheduleAppointment() async {
+    do {
+        
+        } catch {
+            print("Ocorreu um erro ao agendar consulta: \(error)")
+        
+        }
+ }
+COPIAR CÓDIGO
+O do retornará uma opcional, portanto, dsembrulharemos a variável. Para isso, escreveremos if let appointment é igual a service.scheduleAppointment.
+
+@State private var selectDate = Date()
+
+func scheduleAppointment() async {
+    do {
+           if let appointment = 
+                service.scheduleAppointment()
+        
+        } catch {
+            print("Ocorreu um erro ao agendar consulta: \(error)")
+        
+        }
+ }
+COPIAR CÓDIGO
+Precisamos passar o ID do especialista, o ID do paciente e a data. Não temos acesso ao ID do especialista e nem ao do paciente, só temos acesso à data. Quando enviarmos a data na string, simplesmente escreveremos selectDate.convertToString(), função que criamos na extension.
+
+@State private var selectDate = Date()
+
+func scheduleAppointment() async {
+    do {
+           if let appointment = 
+                service.scheduleAppointment(specialistID: String, patientID: String, date: selectedDate.ConvertToString())
+        
+        } catch {
+            print("Ocorreu um erro ao agendar consulta: \(error)")
+        
+        }
+ }
+COPIAR CÓDIGO
+A ScheduleAppointmentView é chamada do arquivo SpecialistCardView. Nele, há uma propriedade do tipo Specialist, portanto, temos acesso ao ID do especialista e podemos passá-lo como parâmetro.
+
+Voltando à ScheduleAppointmentView, logo após o let service, colocaremos var specialistId, que é do tipo string.
+
+import SwiftUI
+
+struct ScheduleAppointmentView: View {
+    
+    let service = WebService()
+        var specialistID: String
+    
+        @State private var selectedDate = Date()
+        
+        func scheduleAppointment() async {
+        }
+COPIAR CÓDIGO
+Poderíamos passar o objeto especialista com todas as informações, mas como só utilizaremos o ID, passaremos apenas ele.
+
+Então, ao chamarmos a função, passaremos o valor SpecialistId.
+
+@State private var selectDate = Date()
+
+func scheduleAppointment() async {
+    do {
+           if let appointment = 
+                service.scheduleAppointment(specialistID: specialistID, patientID: String, date: selectedDate.ConvertToString())
+        
+        } catch {
+            print("Ocorreu um erro ao agendar consulta: \(error)")
+        
+        }
+ }
+COPIAR CÓDIGO
+Agora, no arquivo SpecialistCardView, vamos passar o specialist.id.
+
+NavigationLink {
+    ScheduleAppointmentView(specialistID: specialist.id)
+} label: {
+    ButtonView(text: "Agendar consulta")
+}
+COPIAR CÓDIGO
+Definindo Provisoriamente IDs de Paciente e Especialista
+Resolvemos a questão do SpecialistId. Mas e o patientId? Como não estamos lidando com cadastro de pacientes nem com autenticação, precisaremos copiar o ID do paciente que criamos no Insomnia e colocá-lo no arquivo, que pode ser o arquivo WebService para, então, utilizarmos esse ID como provisório.
+
+Vamos fazer isso! Abriremos o Insomnia, localizaremos a requisição dos pacientes e copiaremos o ID desse paciente. Voltando ao ScheduleAppointmentView, arquivo WebService, fora da struct, criaremos uma constante chamada patientId, que será igual ao ID do paciente em forma de string.
+
+import UIKit
+
+let patientID = "b25aa67b-203e-4a79-b0e0-3f5c560cd317"
+
+struct WebService {
+COPIAR CÓDIGO
+Essa variável está definida de maneira global, o que significa que podemos acessá-la de qualquer lugar do nosso código, sem a necessidade de importá-la ou exportá-la. Mas, isso é totalmente provisório. Futuramente, entenderemos como cadastrar ou autenticar um paciente e muito mais.
+
+Voltaremos à ScheduleAppointmentView, que é uma variável global, então, podemos simplesmente escrever patientId.
+
+@State private var selectDate = Date()
+
+func scheduleAppointment() async {
+    do {
+           if let appointment = 
+                service.scheduleAppointment(specialistID: specialistID, patientID: patientID, date: selectedDate.ConvertToString())
+        
+        } catch {
+            print("Ocorreu um erro ao agendar consulta: \(error)")
+        
+        }
+ }
+COPIAR CÓDIGO
+Além disso, precisamos passar try await antes de chamar a função.
+
+@State private var selectDate = Date()
+
+func scheduleAppointment() async {
+    do {
+           if let appointment = try await 
+                service.scheduleAppointment(specialistID: specialistID, patientID: patientID, date: selectedDate.ConvertToString())
+        
+        } catch {
+            print("Ocorreu um erro ao agendar consulta: \(error)")
+        
+        }
+ }
+COPIAR CÓDIGO
+Dentro das chaves, passaremos print(appointment) para conferir se tudo está correto.
+
+@State private var selectDate = Date()
+
+func scheduleAppointment() async {
+    do {
+           if let appointment = try await 
+                service.scheduleAppointment(specialistID: specialistID, patientID: patientID, date: selectedDate.ConvertToString()) {
+                    print(appintment)
+                }
+        
+        } catch {
+            print("Ocorreu um erro ao agendar consulta: \(error)")
+        
+        }
+ }
+COPIAR CÓDIGO
+Gerenciamento de Erros e Validações
+Está aparecendo um erro no Preview. Vamos clicar em "Fix" e passar o ID como "1, 2, 3", já não se trata de algo funcional, logo, podemos colocar qualquer valor.
+
+#Preview {
+    ScheduleAppointmentView(specialistID: "123")
+}
+COPIAR CÓDIGO
+O próximo passo é apertar o comando "R" para executarmos nossa aplicação. Vamos testar agendando uma consulta com o Dr. João da Silva, marcando o dia 20 de setembro e o horário será às 3 da tarde.
+
+Recebemos na tela de console o scheduleAppointmentResponse com o ID da consulta, o ID do especialista, o ID do paciente, a data e também o motivo de cancelamento, que está nulo.
+
+ScheduleAppointmentResponse(id:
+"3aa3c4d7-4f6d-4739-9f3f-484f4ff0f88d", specialist:
+"b6156d16-8329-4690-980c-eb3b30eaa585", patient:
+"e34db020-3445-4fbf-a744-ba578754da04", date:
+"2023-09-20T15:00:00.000-0300", reasonToCancel: nil)
+COPIAR CÓDIGO
+Significa que ele caiu no print da linha 20, portanto, está funcionando! Já conseguimos agendar consultas.
+
+Mas, conseguimos fazer isso de fato? Vamos abrir o Insomnia. Na lista de todas as consultas (pasta "Consulta", que é uma requisição Get) vamos apertar o botão "Send".
+
+Agora, já temos uma consulta criada. Na verdade, são duas, porque já criamos uma antes.
+
+É importante destacarmos alguns pontos, para isso, retornaremos ao ScheduleAppointmentView. A API contém uma série de validações referentes à consulta. Por exemplo, a clínica só funciona das sete da manhã até às sete da noite.
+
+Então, se executarmos o aplicativo novamente e tentarmos agendar uma consulta quando a clínica estiver fechada, ou seja, às nove da noite, receberemos um erro no console: "Ocorreu um erro ao agendar consulta".
+
+Ocorreu um erro ao agendar consulta:
+keyNotFound (CodingKeys(stringValue: "id", intValue: nil), Swift.DecodingError.Context(codingPath: [], debugDescription: "No value associated with key CodingKeys(stringValue: \"id\", intValue: nil) (\"id\").", underlyingError: nil))
+COPIAR CÓDIGO
+Na verdade, é um erro de decodificação de dados: Swift.DecodingError. Significa que a API retornou uma mensagem como "Não foi possível agendar a consulta", ou algo do tipo. Porém, isso não corresponde ao que estamos tentando decodificar, que é o ScheduleAppointmentResponse, que definimos na struct. Esse é o motivo de ter ocorrido um erro de decodificação de dados.
+
+Existem outras validações também, como, por exemplo, determinado paciente ou especialista não estar disponível naquele horário, a clínica também não funciona aos domingos. Por fim, temos uma validação em que é possível criar a consulta com mais de 30 minutos de antecedência. Se alguém tentar criar uma consulta 15 minutos antes, não funcionará.
+
+Mas como este curso não é focado exatamente em tratamento de erros e exceções, não vamos nos concentrar nessas questões. Entretanto, é importante saber disso ao testar seu aplicativo, ou seja, que a API contém uma série de validações.
+
+Próximos passos
+Agora que já temos a consulta sendo criada, é hora de mostrarmos alertas para a pessoa usuária, fornecendo um feedback visual.
+
+Até o próximo vídeo!
+
+@@04
+Requisições POST
+
+Estamos construindo o aplicativo Voll med e precisamos fazer uma requisição POST para enviar dados:
+func scheduleAppointment(specialistID: String,
+                         patientID: String,
+                         date: String) async throws -> ScheduleAppointmentResponse? {
+    let endpoint = baseURL + "/consulta"
+
+    guard let url = URL(string: endpoint) else {
+        print("Erro na URL!")
+        return nil
+    }
+
+    let appointment = ScheduleAppointmentRequest(specialist: specialistID, patient: patientID, date: date)
+
+    let jsonData = try JSONEncoder().encode(appointment)
+
+    var request = URLRequest(url: url)
+    request.httpMethod = "POST"
+    request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+    request.httpBody = jsonData
+
+    let (data, _) = try await URLSession.shared.data(for: request)
+    let appointmentResponse = try JSONDecoder().decode(ScheduleAppointmentResponse.self, from: data)
+
+    return appointmentResponse
+
+}
+COPIAR CÓDIGO
+Analisando o trecho de código para realizar a requisição POST, qual das seguintes alterações resultaria em um erro ao tentar enviar a requisição?
+
+
+Alternativa correta
+Substituir let jsonData = try JSONEncoder().encode(appointment) por let jsonData = try? JSONEncoder().encode(appointment).
+ 
+Ainda funcionaria! Ao utilizar try?, estamos optando por um tratamento de erro que retorna um valor opcional. Se o encoding falhar, jsonData será nil. Como nossa função retorna um **ScheduleAppointmentResponse opcional**, então tudo bem utilizarmos desta maneira.
+Alternativa correta
+Substituir let (data, _) = try await URLSession.shared.data(for: request) por let (data, response) = try await URLSession.shared.data(for: request).
+ 
+Ambos os trechos são sintaticamente corretos. A única diferença é que na primeira versão estamos descartando a resposta usando _, enquanto na segunda estamos armazenando-a na variável response. Se não usarmos a response posteriormente no código, não haverá diferença funcional.
+Alternativa correta
+Remover a linha request.setValue("application/json", forHTTPHeaderField: "Content-Type").
+ 
+Esta linha especifica que o corpo da requisição está sendo enviado como JSON. Se você remover essa linha, o servidor pode não interpretar corretamente os dados enviados, levando a erros na requisição.
+Alternativa correta
+Substituir baseURL + "/consulta" por **"\(baseURL)/consulta”**.
+ 
+Sem problemas essa substituição. No caso, estamos trocando uma adição de strings para uma interpolação de strings, que ocorre sem problemas.
+
+@@05
+Mostrando um alerta para o usuário
+
+Vamos mostrar um feedback visual para a pessoa usuária, tanto para quando o agendamento foi concluído com sucesso, quanto se houve algum erro. Faremos isso utilizando alertas, através de um modificador de propriedade chamado alert.
+Preparando o Feedback Visual
+Mas, antes de definirmos esse modificador na nossa view, vamos criar duas novas variáveis de estado no arquivo ScheduleAppointmentView.swift. A primeira será a showAlert. Ela é um booleano que representará se o alerta deve ser mostrado ou não. Inicializaremos com valor false, porque ele não será exibido inicialmente, mas sim após a nossa requisição.
+
+@State private var selectedDate = Date()
+@State private var showAlert = false
+COPIAR CÓDIGO
+Também vamos criar outra variável de estado chamada isAppointmentScheduled, que também será inicializada como false, para representar se a requisição foi feita com sucesso ou não.
+
+@State private var selectedDate = Date()
+@State private var showAlert = false
+@State private var isAppointmentScheduled = false
+COPIAR CÓDIGO
+Manipularemos o alerta de acordo com essa variável, se a requisição for feita com sucesso, exibiremos uma mensagem indicando que deu tudo certo. No entanto, se falhar, forneceremos uma mensagem de erro, pedindo que a pessoa usuária tente novamente.
+
+Dentro da função scheduledAppointment, a variável showAlert mostrará o alerta em qualquer situação: tanto se a requisição for bem-sucedida, quanto se falhar. Logo após o catch, vamos definir showAlert = true, para exibir o alerta em qualquer caso.
+
+ func rescheduleAppointment() async {
+        guard let appointmentID else {
+            print("Houve um erro ao obter o ID da consulta")
+            return
+        }
+        do {
+            if let appointment = try await service.rescheduleAppointment(appointmentID: appointmentID, date: selectedDate.convertToString()) {
+                isAppointmentScheduled = true
+            } else {
+                isAppointmentScheduled = false
+            }
+        } catch {
+            print("Ocorreu um erro ao remarcar consulta: \(error)")
+            isAppointmentScheduled = false
+        }
+        showAlert = true
+    }
+COPIAR CÓDIGO
+Na variável scheduleAppointmentScheduled, vamos apagar o print(appointment) e escrever isAppointmentScheduled = true, porque a requisição foi feita com sucesso.
+
+func scheduleAppointment() async {
+        do {
+            if let appointment = try await  service.scheduleAppointment(specialistID: specialistID, patientID: patientID, date: selectedDate.convertToString()) {
+                isAppointmentScheduled = true
+           
+        } catch {
+          
+            print("Ocorreu um erro ao agendar consulta: \(error)")
+        }
+        showAlert = true
+    }
+COPIAR CÓDIGO
+Também criaremos um else, porque se a resposta for negativa, vamos definir isAppointmentScheduled = false. Além disso, no catch, também definiremos isAppointmentScheduled = false.
+
+func scheduleAppointment() async {
+        do {
+            if let appointment = try await  service.scheduleAppointment(specialistID: specialistID, patientID: patientID, date: selectedDate.convertToString()) {
+                isAppointmentScheduled = true
+            } else {
+                isAppointmentScheduled = false
+            }
+        } catch {
+            isAppointmentScheduled = false
+            print("Ocorreu um erro ao agendar consulta: \(error)")
+        }
+        showAlert = true
+    }
+COPIAR CÓDIGO
+Portanto, recapitulando, o showAlert será true em qualquer caso, pois queremos que ele mostre um alerta tanto de erro quanto de sucesso. Já a variável isAppointmentScheduled só se torna true quando a requisição for bem-sucedida.
+
+Como não estamos usando a variável appointment, podemos simplesmente substituí-la por um underline, _ , indicando que está tudo bem.
+
+func scheduleAppointment() async {
+        do {
+            if let _ = try await  service.scheduleAppointment(specialistID: specialistID, patientID: patientID, date: selectedDate.convertToString()) {
+                isAppointmentScheduled = true
+            } else {
+                isAppointmentScheduled = false
+            }
+        } catch {
+            isAppointmentScheduled = false
+            print("Ocorreu um erro ao agendar consulta: \(error)")
+        }
+        showAlert = true
+    }
+COPIAR CÓDIGO
+Implementação do Modificador .alert()
+Agora, vamos implementar este alerta. Logo após o modificador onAppear, vamos escrever .alert. Anteriormente, usávamos a primeira opção com os parâmetros isPresented e content, mas ela ficará obsoleta em uma futura versão do iOS. Portanto, temos que usar parâmetros diferentes.
+
+.alert(titleKey: LocalizedStringKey, isPresented: 
+    Binding<Bool>, presenting: T?, actions: (T) ->
+        view, message: (T) -> View)
+COPIAR CÓDIGO
+O primeiro parâmetro que precisamos passar é o título do alerta, que mudará dependendo do caso. Se a variável isAppointmentScheduled for verdadeira, o título será "Sucesso". Se for falsa, será "Ops, algo deu errado".
+
+No .alert, vamos fazer uma verificação ternária. Escreveremos isAppointmentScheduled ?. Se for verdadeira, então, "Sucesso!". Se for falsa, então, "Ops, algo deu errado".
+
+.alert(isAppointmentScheduled ? "Sucesso!" : "Ops, algo deu errado!", isPresented: Binding<Bool>, presenting: T?, actions: (T) ->
+        view, message: (T) -> View)
+COPIAR CÓDIGO
+No isPresented precisamos passar como Binding a variável que controla se o alerta está sendo mostrado ou não. Neste caso, é a variável showAlert. Como se trata de um binding, precisamos adicionar cifrão: $showAlert.
+
+.alert(isAppointmentScheduled ? "Sucesso!" : "Ops, algo deu errado!", isPresented: $showAlert, presenting: T?, actions: (T) ->
+        view, message: (T) -> View)
+COPIAR CÓDIGO
+O presenting é um pouco diferente. Nele, conseguimos definir quais serão os botões do nosso alerta. Vamos passar a nossa variável isAppointmentScheduled, pois é a partir dela que a apresentação do alerta vai mudar.
+
+Essa variável determinará se teremos uma mensagem de erro ou uma mensagem de sucesso.
+
+.alert(isAppointmentScheduled ? "Sucesso!" : "Ops, algo deu errado!", isPresented: $showAlert, presenting: isAppointmentScheduled, actions: (T) ->
+        view, message: (T) -> View)
+COPIAR CÓDIGO
+Na parte de actions, precisamos passar uma função que represente as ações do botão. Nós queremos apenas um botão com a palavra "OK", que fará o alerta desaparecer.
+
+Portanto, podemos pressionar "Enter" e a IDE fará toda a reorganização necessária. Em seguida, substituiremos o T por isScheduled, que é o nome da variável. O in delimita o que estamos passando como parâmetro e o que é o corpo da função.
+
+  .alert(isAppointmentScheduled ? "Sucesso!" : "Ops, algo deu errado!",     isPresented: $showAlert, presenting: isAppointmentScheduled) { isScheduled in
+    
+} message: { T in
+   
+}
+COPIAR CÓDIGO
+Na linha 60, vamos adicionar um Button() e escolher a opção action e label. Mas, dentro de action, não queremos que ele faça nada, porque, por padrão, ao clicarmos no botão, o alerta vai desaparecer. Sendo assim, a action ficará vazia.
+
+  .alert(isAppointmentScheduled ? "Sucesso!" : "Ops, algo deu errado!",      isPresented: $showAlert, presenting: isAppointmentScheduled) { isScheduled in
+      Button(action: {}, label: {
+      
+        })
+    
+} message: { T in
+   
+}
+COPIAR CÓDIGO
+O label será um Text("Ok").
+
+  .alert(isAppointmentScheduled ? "Sucesso!" : "Ops, algo deu errado!",      isPresented: $showAlert, presenting: isAppointmentScheduled) { isScheduled in
+      Button(action: {}, label: {
+            Text("Ok") 
+        })
+    
+} message: { T in
+   
+}
+COPIAR CÓDIGO
+Em message, vamos inserir a mensagem do alerta. Novamente, criaremos uma variável isSchedule. Na linha seguinte, faremos uma verificação com if isScheduled. Dentro dele, escreveremos Text("A consulta foi agendada com sucesso!") e um else, com Text("Houve um erro ao agendar sua consulta. Por favor tente novamente ou entre em contato via telefone.)
+
+ .alert(isAppointmentScheduled ? "Sucesso!" : "Ops, algo deu errado!", isPresented: $showAlert, presenting: isAppointmentScheduled) { isScheduled in
+            Button(action: {}, label: {
+                Text("Ok")
+            })
+        } message: { isScheduled in
+            if isScheduled {
+                Text("A consulta foi agendada com sucesso!")
+            } else {
+                Text("Houve um erro ao agendar sua consulta. Por favor tente novamente ou entre em contato via telefone.")
+            }
+        }
+        }
+}
+ 
+COPIAR CÓDIGO
+Demonstração e Testes
+Finalizamos essa parte relacionada ao alerta. Sei que pode parecer um pouco complicado devido à quantidade de código, mas quando passamos isScheduled no botão, na verdade, não estamos usando a variável isScheduled para nada. Estamos apenas utilizando na mensagem. Portanto, vamos substituí-la por underline, _.
+
+ .alert(isAppointmentScheduled ? "Sucesso!" : "Ops, algo deu errado!", isPresented: $showAlert, presenting: isAppointmentScheduled) { _ in
+            Button(action: {}, label: {
+                Text("Ok")
+            })
+        } message: { isScheduled in
+            if isScheduled {
+                Text("A consulta foi agendada com sucesso!")
+            } else {
+                Text("Houve um erro ao agendar sua consulta. Por favor tente novamente ou entre em contato via telefone.")
+            }
+        }
+        }
+}
+ 
+COPIAR CÓDIGO
+Vamos testar se está funcionando! Agendaremos uma consulta com a Maria Souza para o dia 26 às 14h15. Após clicar em "Agendar consulta", recebemos o alerta de sucesso.
+
+Se tentarmos marcar, por exemplo, quando a clínica está fechada, às 23h15, ele envia um alerta indicando que algo deu errado. Portanto, exibe a mensagem será "Houve um erro ao agendar a sua consulta".
+
+Próximos passos
+Dessa maneira, concluímos toda a parte de agendamento de consultas. O próximo passo é criar uma tela onde a pessoa usuária consiga visualizar todas as consultas agendadas.
+
+https://cursos.alura.com.br/course/ios-swiftui-navegacao-gerenciamento-estados
+
+@@06
+Para saber mais: voltando para a tela anterior
+
+Você pode ter percebido que, ao agendar uma consulta, o usuário continua na tela de agendamento. Isso acontece em outras telas também, como a de cancelamento.
+Neste para saber mais, vamos discutir sobre a implementação do redirecionamento à tela anterior. No SwiftUI, esse comportamento pode ser implementado de forma simples.
+
+Vamos entender como você pode fazer isso, especificamente no contexto da tela ScheduleAppointmentView.
+
+Se você deseja que o usuário seja redirecionado de volta à tela anterior depois de clicar no botão "Ok" do alerta, você pode usar o @Environment property wrapper com a variável presentationMode.
+
+Nós já vimos sobre essa property wrapper quando implementamos um toolbarItem no curso iOS com SwiftUI: implementando navegação e gerenciamento de estados.
+
+Primeiro, adicione esta linha no topo da sua struct ScheduleAppointmentView:
+
+@Environment(\.presentationMode) var presentationMode
+COPIAR CÓDIGO
+Essa variável permite que você controle a maneira como a view é apresentada. Agora, no seu alerta, atualize a ação do botão "Ok" para:
+
+Button(action: {
+    presentationMode.wrappedValue.dismiss()
+}, label: {
+    Text("Ok")
+})
+COPIAR CÓDIGO
+A função dismiss() faz exatamente o que parece: ela descarta a view atual e retorna à view anterior.
+
+Dessa forma, sempre que o usuário clicar em "Ok" após receber a notificação do alerta, ele será redirecionado automaticamente para a tela anterior. Isso melhora a experiência do usuário ao tornar a navegação do app mais intuitiva e fluida.
+
+@@07
+Implementando a TabView
+
+Agora, vamos implementar uma TabView ao nosso aplicativo.
+O que é TabView?
+TabView é um componente visual que representa uma interface de navegação baseada em abas. Normalmente, essas abas estão localizadas na parte inferior do aplicativo. Assim, a pessoa usuária pode alternar entre as telas de uma maneira muito mais simples.
+
+Nós teremos uma aba para representar a HomeView, tela que mostra todas as pessoas especialistas, e outra aba para representar uma tela que vai mostrar todas as consultas do paciente.
+
+Criando a tela de consultas
+Vamos começar criando a View para mostrar todas as consultas. Dentro da pasta "Views", criaremos um novo arquivo "SwiftUI View"e chamá-lo de MyAppointmentsView, ou seja, minhas consultas.
+
+Dentro do MyAppointmentsView, removeremos o Text e criaremos um VStack e nele, um texto provisório: Text("Minhas consultas"). No VStack, adicionaremos os modificadores de navegação, por exemplo, o NavigationTitle, cujo valor será "Minhas consultas". Ele ficará em formato grande, portanto .navigationBartTittleDisplayMode(.large).
+
+import SwiftUI
+
+struct MyAppointmentsView: View {
+   var body: some View {
+         VStack {
+                 Text("Minhas consultas")
+             }
+             .navigationTitle("Minhas consultas")
+             .navigationBarTitleDisplayMode(.large)
+     }
+}
+COPIAR CÓDIGO
+Criando as abas
+Agora que temos a tela de consultas criada, podemos fazer a TabView no arquivo ContentView, que é aquele arquivo que não manipulamos até agora. Portanto, vamos remover todo o VStack, inclusive o padding, e escreveremos TabView.
+
+import SwidtUI
+
+struct ContentView: View {
+    var body: some View {
+            TabView
+        }
+  }
+
+}
+COPIAR CÓDIGO
+Dentro dessa TabView, definiremos as abas que serão exibidas. A primeira será a HomeView e a segunda, a MyAppointmentsView.
+
+import SwidtUI
+
+struct ContentView: View {
+    var body: some View {
+            TabView {
+                    HomeView()
+                        
+                        MyAppointmentsView()
+        }
+  }
+
+}
+COPIAR CÓDIGO
+Se observarmos nosso Preview, nossa primeira página está funcionando, mas não tem nenhum texto ou imagem. Portanto, criaremos um texto e uma imagem para cada aba. Para isso, no HomeView, vamos adicionar um modificador chamado .TabItem, abrir chaves passando Label e selecionar a opção title:icon. O title é um Text() e o icon é uma Image.
+
+import SwidtUI
+
+struct ContentView: View {
+    var body: some View {
+            TabView {
+                    HomeView()
+                            .tabItem {
+                                   Label(
+                                          title: { Text("Label") },
+                                                icon> { Image(systemName: "42.circle") }
+                                     )
+                              }
+                        
+                        MyAppointmentsView()
+        }
+  }
+
+}
+COPIAR CÓDIGO
+Para o title, vamos passar um Text("Home") e para o icon, passaremos Image(systemName: "house"), sendo que house representará o ícone de uma pequena casa.
+
+import SwidtUI
+
+struct ContentView: View {
+    var body: some View {
+            TabView {
+                    HomeView()
+                            .tabItem {
+                                   Label(
+                                          title: { Text("Home") },
+                                                icon> { Image(systemName: "house") }
+                                     )
+                              }
+                        
+                        MyAppointmentsView()
+        }
+  }
+
+}
+COPIAR CÓDIGO
+Agora, precisamos fazer o mesmo para o MyAppointmentView():
+
+import SwidtUI
+
+struct ContentView: View {
+    var body: some View {
+            TabView {
+                    HomeView()
+                            .tabItem {
+                                   Label(
+                                          title: { Text("Home") },
+                                                icon> { Image(systemName: "house") }
+                                     )
+                              }
+                        
+                        MyAppointmentsView()
+                            .tabItem {
+                                    Label(
+                                            title: { Text("Minhas consultas")}
+                                                icon: {Image(systemName: "calendar") }
+        }
+  }
+
+}
+COPIAR CÓDIGO
+Refinando a HomeView
+Com isso, já é possível navegar entre a tela HomeView e as consultas. No entanto, a TabView ainda apresenta alguns problemas com a navegação. Precisaremos agrupar cada View dentro do TabView em uma NavigationStack.
+
+Para isso, após o TabView, escreveremos NavigationStack e moveremos nossa HomeView() para dentro do NavigationStack e manteremos a propriedade NavigationStack.
+
+import SwidtUI
+
+struct ContentView: View {
+    var body: some View {
+            TabView {
+                   NavigationStack {
+                       HomeView()
+                     }
+                     .tabItem {
+                                   Label(
+                                          title: { Text("Home") },
+                                                icon> { Image(systemName: "house") }
+                                     )
+                              }
+                        
+                        MyAppointmentsView()
+                            .tabItem {
+                                    Label(
+                                            title: { Text("Minhas consultas")}
+                                                icon: {Image(systemName: "calendar") }
+        }
+  }
+
+}
+COPIAR CÓDIGO
+Vamos fazer o mesmo para o MyAppointmmentsView(): moveremos a declaração do MyAppointmentsView para dentro da NavigationStack.
+
+import SwidtUI
+
+struct ContentView: View {
+    var body: some View {
+            TabView {
+                   NavigationStack {
+                       HomeView()
+                     }
+                     .tabItem {
+                                   Label(
+                                          title: { Text("Home") },
+                                                icon> { Image(systemName: "house") }
+                                     )
+                              }
+                            
+                     NavigationStack						
+                            MyAppointmentsView()
+                     }
+                            .tabItem {
+                                    Label(
+                                            title: { Text("Minhas consultas")}
+                                                icon: {Image(systemName: "calendar") }
+        }
+  }
+
+}
+COPIAR CÓDIGO
+O próximo passo é identar todo nosso código.
+
+import SwiftUI
+
+struct ContentView: View {
+    var body: some View {
+        TabView {
+            NavigationStack {
+                HomeView()
+            }
+            .tabItem {
+                Label(
+                    title: { Text("Home") },
+                    icon: { Image(systemName: "house") }
+                )
+            }
+            
+            NavigationStack {
+                MyAppointmentsView()
+            }
+            .tabItem {
+                Label(
+                    title: { Text("Minhas consultas") },
+                    icon: { Image(systemName: "calendar") }
+                )
+            }
+        }
+    }
+}
+COPIAR CÓDIGO
+A ContentView não está sendo chamada de nenhum lugar. Se acessarmos o arquivo VollmedApp, notaremos que estamos chamando a HomeView().
+
+import SwiftUI
+
+@main
+struct vollmedApp: App {
+    var body: some Scene {
+            windowGroup {
+                    NavigationStack {
+                            HomeView()
+                        }
+                }
+        }
+}
+COPIAR CÓDIGO
+Agora, vamos apagar o NavigationStack junto com a HomeView, porque já colocamos a Navigation Stack em outras Views, e chamaremos a contentView(), que era exatamente o que fazemos ao criar uma aplicação SwiftUI.
+
+import SwiftUI
+
+@main
+struct vollmedApp: App {
+    var body: some Scene {
+        windowGroup {
+            ContentView
+            }
+        }
+    }
+}
+COPIAR CÓDIGO
+Demonstração e Testes
+Por fim, executaremos e verificaremos se tudo está funcionando corretamente.
+
+Temos TabView na seção inferior do nosso aplicativo, representando a tela "Home". Se alterarmos para "Minhas Consultas", a tela de "Minhas Consultas", ou seja, a MyAppointmentsView, é chamada.
+
+Próximos passos
+Agora que já temos esse fluxo funcionando, vamos começar a construção da tela de "Minhas Consultas", fazendo uma nova requisição para a API e obter todas as consultas de um paciente.
+
+Nos encontramos no próximo vídeo!
+
+@@08
+Faça como eu fiz: agendando consulta com requisição POST
+
+Vamos colocar em prática o que você assistiu durante os vídeos!
+1 - Implementando a requisição POST:
+
+a) Defina e implemente a função para agendar uma consulta, que envia uma requisição POST:
+func scheduleAppointment(specialistID: String, patientID: String, date: String) async throws -> ScheduleAppointmentResponse? { ... }
+COPIAR CÓDIGO
+2 - Chamando a função para realizar o agendamento:
+
+a) Estabeleça o patientID:
+let patientID = "id-do-paciente-que-veio-do-insomnia"
+COPIAR CÓDIGO
+b) Passe o specialistID para a ScheduleAppointmentView:
+ScheduleAppointmentView(specialistID: specialist.id)
+COPIAR CÓDIGO
+c) Chame a função para agendar o compromisso:
+        func scheduleAppointment() async { ... }
+        
+        // Na ação do botão:
+        Task {
+            await scheduleAppointment()
+        }
+COPIAR CÓDIGO
+3 - Mostrando um alerta para o usuário:
+
+a) Adicione propriedades para controlar o alerta:
+@State private var showAlert = false
+@State private var isAppointmentScheduled = false
+COPIAR CÓDIGO
+b) Modifique a função de agendamento para definir o estado do alerta:
+func scheduleAppointment() async { ... showAlert = true ... }
+COPIAR CÓDIGO
+c) Mostre um alerta com base no sucesso ou fracasso do agendamento:
+        .alert(isAppointmentScheduled ? "Sucesso!" : "Ops, algo deu errado!", isPresented: $showAlert, presenting: isAppointmentScheduled) { ... }
+COPIAR CÓDIGO
+4 - Implementando a TabView:
+
+a) Crie uma TabView contendo duas tabs - Home e Minhas consultas:
+TabView { ... }
+COPIAR CÓDIGO
+b) Defina a view MyAppointmentsView:
+struct MyAppointmentsView: View { ... }
+COPIAR CÓDIGO
+c) Integre sua TabView no ponto de entrada do aplicativo:
+struct VollmedApp: App { ... }
+COPIAR CÓDIGO
+Bons estudos!
+
+A capacidade de enviar informações para um back-end é fundamental em muitos aplicativos . Ao implementar a requisição POST, você não apenas aprendeu a técnica, mas também a melhor forma de fornecer feedback ao usuário. Lembre-se de sempre de pensar na experiência do usuário ao desenvolver novas funcionalidades.
+Dê uma olhada no progresso do projeto e no código até agora no link para a branch no GitHub.
+
+Sempre que tiver dúvidas ou desafios, saiba que estamos aqui para ajudar! Não hesite em contatar-nos pelo fórum, discord ou qualquer outro canal de suporte.
+
+https://github.com/alura-cursos/swiftui-vollmed-crud/tree/aula-04
+
+@@09
+O que aprendemos?
+
+Nesta aula, você aprendeu a:
+Implementar a requisição POST para enviar dados ao servidor;
+Mostrar alertas ao usuário após certas ações, melhorando o feedback;
+Integrar e utilizar a TabView em seu projeto.
+Excelente! O processo de agendamento está funcional.
+
+Até a próxima aula!
