@@ -2985,3 +2985,615 @@ Integrar e utilizar a TabView em seu projeto.
 Excelente! O processo de agendamento está funcional.
 
 Até a próxima aula!
+
+#### 08/04/2024
+
+@05-Layout da tela de consultas
+
+@@01
+Projeto da aula anterior
+
+Você pode revisar o seu código e acompanhar o passo a passo do desenvolvimento do nosso projeto através desta branch no Github e, se preferir, pode baixar o projeto da aula anterior.
+Bons estudos!
+
+https://github.com/alura-cursos/swiftui-vollmed-crud/tree/aula-04
+
+https://github.com/alura-cursos/swiftui-vollmed-crud/archive/refs/heads/aula-04.zip
+
+@@02
+Criando a requisição para obter todas as consultas de um paciente
+
+Vamos implementar a tela de "Minhas consultas". Precisamos fazer uma nova requisição com o verbo GET para obter todas as consultas de determinado paciente.
+Obtendo consultas de paciente
+Voltamos ao Insomnia para analisar como essa requisição GET funciona. No painel da lateral esquerda, vamos em "Paciente > Consultas de um paciente". Sua rota é /paciente/:id/consultas.
+
+Vamos pegar o ID de um paciente. Para isso, entramos na requisição denominada "Todos os pacientes", copiamos o ID do Lucas e o colamos no lugar de :id na rota "Consultas de um paciente".
+
+localhost:3000/paciente/e34db020-3445-4fbf-a744-ba578754da04/consultas
+COPIAR CÓDIGO
+Após enviar a requisição, ela retorna um array de consultas com atributos como id, data e especialista, que é um tipo Specialist:
+
+[
+    {
+        "id": "25aeee0a-2d94-41c6-82c3-d98e42236a61",
+        "data": "2023-10-16T13:15:00.000Z",
+        "especialista": {
+            "nome": "Dr. João da Silva",
+            "crm": "12345",
+            "imagem": "https://images.unsplash.com/photo-
+1637059824899-a441006a6875?ixlib=rb-
+4.0.3&ixid=M3wxMjA3 fDB8MHxwaG90by1wYWdlfHx8fGVu fDB8fHx8f
+A%3D%3D&auto=format&fit=crop&w=752&q=80",
+            "especialidade": "Cardiologia",
+            "email": "joao.silva@example.com",
+            "telefone": "(11) 99999-9999",
+            "id": "b6156d16-8329-4690-980c-eb3b30eaa585"
+        }
+    },
+COPIAR CÓDIGO
+Voltando para o Xcode, é necessário criar um novo modelo para representar este retorno. Clicando com o botão direito na pasta "Models", vamos selecionar "New File > Switch File" para criar um arquivo chamado Appointment.
+
+Vamos definir uma struct Appointment, que vai conformar ao protocolo Identifiable e também ao Codable.
+
+Em seguida, vamos criar uma constante id, que é do tipo String, uma constante date do tipo String, e uma constante specialist do tipo Specialist.
+
+Agora, vamos para o enum CodingKeys que será do tipo String e que irá se adequar ao protocolo Coding Keys.
+
+Entre chaves, vamos passar case id que não irá mudar. Também passaremos case date que na nossa API é tratado como data. Por fim, o case specialist que é tratado como especialista. Com isso, fizemos a conversão.
+
+Appointment.swift:
+import Foundation
+
+struct Appointment: Identifiable, Codable {
+    let id: String
+    let date: String
+    let specialist: Specialist
+    
+    enum CodingKeys: String, CodingKey {
+        case id
+        case date = "data"
+        case specialist = "especialista"
+    }
+}
+COPIAR CÓDIGO
+Temos a estrutura criada, agora vamos implementar essa requisição efetivamente.
+
+Para isso, vamos navegar para o arquivo "Services > WebService.swift. Acima da função scheduleAppointment(), vamos criar outra função chamada getAllAppointmentsFromPatient para pegar todas as consultas de um paciente.
+
+Como parâmetro, passaremos o ID do paciente, ou seja, patientID que é do tipo String. Em seguida, vamos passar async throws onde o retorno será um array do tipo Appointment opcional.
+
+No corpo da função, vamos começar criando um let para o endpoint. Ele será igual à baseURL mais uma string /paciente/ mais o patientID mais a string /consultas. Essa é a rota assim como verificamos no Insomnia. Você também poderia fazer uma interpolação de variáveis.
+
+Agora, vamos tratar a URL. Para isso, basta copiar o bloco de guard let url da função scheduleAppintment(), da linha 27 a 30. Será exatamente o mesmo código.
+
+Em seguida, precisamos chamar o URLSession para fazer a chamada de rede. Basta digitar let(data, _) para desestruturar a tupla. Isso será igual à try await URLSession.shared.data(), passando from: url.
+
+Na próxima linha, escrevemos let appointments igual à try JSONDecoder() para decodificar os dados. Depois, acrescentamos .decode(), passando o type como [Appointment].self e o from como data.
+
+Desse modo, decodificamos os dados vindos do JSON para uma instância do tipo Appointment. Colocamos Appointment entre colchetes, pois é um array de consultas já que são várias consultas.
+
+Por fim, vamos dar um return appointments.
+
+WebService.swift:
+func getAllAppointmentsFromPatient(patientID: String) async throws -> [Appointment]? {
+    let endpoint = baseURL + "/paciente/" + patientID + "/consultas"
+    
+    guard let url = URL(string: endpoint) else {
+        print("Erro na URL!")
+        return nil
+    }
+    
+    let (data, _) = try await URLSession.shared.data(from: url)
+    
+    let appointments = try JSONDecoder().decode([Appointment].self, from: data)
+    
+    return appointments
+}
+COPIAR CÓDIGO
+Agora, vamos chamar essa função na MyAppointmentsView.
+
+Primeiro, vamos instanciar o WebService. Por isso, vamos criar uma constante let service igual à WebService().
+
+Também precisaremos modificar a própria View. Em vez de um VStack, adicionaremos uma ScrollView(), pois podemos rolar a tela caso haja várias consultas.
+
+Vamos passar o atributo showIndicators como false, porque não queremos que mostre a barra de rolagem.
+
+Além disso, vmaos criar uma função assíncrona chamada getAllAppointments().
+
+Ela será chamada assim que a View aparecer. Então, vamos adicionar um modificador de propriedade .onAppear logo após navigationBarTitleDisplayMode.
+
+No onAppear, adicionaremos contexto assíncrono como Task. E dentro dele, chamareremos o await getAllAppointments().
+
+Também vamos criar uma variável de estado logo após a instância do WebService(). Basta digitar um @State private var e nomear como appointments. Ela será um array de Appointment. E vamos inicializá-la com um array vazio, ou seja, [].
+
+MyAppointmentsView.swift:
+struct MyAppointmentsView: View {
+
+    let service = WebService()
+
+    @State private var appointments: [Appointment] = []
+
+    func getAllAppointments() async {
+    }
+
+    var body: some View {
+        ScrollView(showsIndicators: false) {
+            Text("Minhas consultas")
+        }
+        .navigationTitle("Minhas consultas")
+        .navigationBarTitleDisplayMode(.large)
+        .onAppear {
+            Task {
+                await getAllAppointments()
+            }
+        }
+    }
+}
+COPIAR CÓDIGO
+Dentro da ScrollView(), vamos remover esse Text(). No lugar, vamos escrever um ForEach, porque agora queremos que seja mostrada uma lista de SpecialistCardView, assim como temos na HomeView.
+
+Qual será a variável que passaremos no ForEach()? Será appointments. Vamos abrir as chaves. Para cada appointment, criaremos uma variável chamada appointment in.
+
+Dentro do ForEach, chamaremos o SpecialistCardView(), passando o appointment.specialist, porque a API retorna o objeto especialista completo.
+
+O preview continua em branco, porque o array está vazio. Só vamos adicionar um .padding() após essa navigationBarTitleDisplayModel, para dar um espaçamento.
+
+Agora, vamos implementar a função getAllAppointments(). Começaremos com o do-catch, afinal essa função pode lançar erros.
+
+Dentro do catch, faremos um print() da string Ocorreu um erro ao obter consultas, interpolando a variável \(error), a qual temos acesso.
+
+Dentro do do, faremos um if let appointments, já que é um retorno opcional, igual à try await service.getAllAppointmentsFromPatient().
+
+E qual é o id do paciente? É o patientID que está definido dentro do arquivo Webservice de forma temporária.
+
+Como é uma condicional, abrimos e fechamos chaves. Dentro dessa condicional, escreveremos self.appointments é igual a appointments. Estamos atualizando a variável de estado.
+
+struct MyAppointmentsView: View {
+    
+    let service = WebService()
+    
+    @State private var appointments: [Appointment] = []
+    
+    func getAllAppointments() async {
+        do {
+            if let appointments = try await service.getAllAppointmentsFromPatient(patientID: patientID) {
+                self.appointments = appointments
+            }
+        } catch {
+            print("Ocorreu um erro ao obter consultas: \(error)")
+        }
+    }
+    
+    var body: some View {
+        ScrollView(showsIndicators: false) {
+            ForEach(appointments) { appointment in
+                SpecialistCardView(specialist: appointment.specialist)
+            }
+        }
+        .navigationTitle("Minhas consultas")
+        .navigationBarTitleDisplayMode(.large)
+        .padding()
+        .onAppear {
+            Task {
+                await getAllAppointments()
+            }
+        }
+    }
+}
+COPIAR CÓDIGO
+Vamos apertar "Command+R" para verificar se o código está funcionando.
+
+No aplicativo, vamos para a aba "Minhas consultas". As consultas já apareceram, como esperado.
+
+Mas note, ainda aparece o botão "Agendar Consulta". Isso não faz muito sentido se a consulta já está agendada. Além disso, seria interessante se mostrássemos também qual é o horário dessa consulta.
+
+Então, te espero para o próximo vídeo para implementarmos essas funcionalidades.
+
+@@03
+Mudanças no retorno na API
+
+Considere a struct Appointment desenvolvida nesta aula:
+struct Appointment: Identifiable, Codable {
+    let id: String
+    let date: String
+    let specialist: Specialist
+
+    enum CodingKeys: String, CodingKey {
+        case id
+        case date = "data"
+        case specialist = "especialista"
+    }
+}
+COPIAR CÓDIGO
+Suponha que a API seja atualizada e agora forneça informações adicionais sobre o paciente em cada consulta, incluindo o nome e o número de telefone. Você precisa atualizar o modelo Appointment para incluir essas informações.
+
+Dada essa nova necessidade, qual das seguintes opções é a implementação mais adequada?
+
+    struct Appointment: Identifiable, Codable {
+        let id: String
+        let date: String
+        let specialist: Specialist
+    
+        enum CodingKeys: String, CodingKey {
+            case id
+            case date = "data"
+            case specialist = "especialista"
+                    case patientName = "nomePaciente"
+            case patientPhone = "telefonePaciente"
+        }
+    }
+ 
+Alternativa correta
+    struct Appointment: Identifiable, Codable {
+        let id: String
+        let date: String
+        let specialist: Specialist
+        let patientName: String
+        let patientPhone: String
+    
+        enum CodingKeys: String, CodingKey {
+            case id
+            case date = "data"
+            case specialist = "especialista"
+            case patientName = "nomePaciente"
+            case patientPhone = "telefonePaciente"
+        }
+    }
+ 
+Esta é uma abordagem correta para adicionar as novas propriedades. Ela inclui o nome e o telefone do paciente diretamente no modelo Appointment e define os CodingKeys adequados para mapear os nomes das propriedades para os nomes dos campos JSON retornados pela API.
+Alternativa correta
+    struct Appointment: Identifiable, Codable {
+        let id: String
+        let date: String
+        let specialist: Specialist
+        let patient: Patient
+    }
+    
+    struct Patient: Codable {
+        let name: String
+        let phone: String
+    }
+ 
+Alternativa correta
+    struct Appointment: Identifiable, Codable {
+        let id: String
+        let date: String
+        let specialist: Specialist
+        let patientName: String?
+        let patientPhone: String?
+    }
+    
+    enum CodingKeys: String, CodingKey {
+        case id
+        case date = "data"
+        case specialist = "especialista"
+        case patientName = "nomePaciente"
+        case patientPhone = "telefonePaciente"
+    }
+ 
+A inclusão de valores opcionais (usando ?) para os novos campos pode não ser a abordagem ideal, a menos que a API possa ocasionalmente omitir esses campos. Além disso, o enum CodingKeys está fora do escopo do struct, tornando-o inválido.
+
+@@04
+Adicionando botões de remarcação e cancelamento de uma consulta
+
+Agora precisamos fazer duas alterações na nossa aplicação.
+Inicialmente, na tela "Minhas Consultas", não queremos mais mostrar o botão "Agendar Consulta", pois já não é relevante. Em seu lugar, queremos exibir dois botões diferentes, um ao lado do outro. Um botão para remarcar e outro para cancelar a consulta.
+
+Seria interessante mostrarmos também a data e a hora da consulta. Lembram da função que criamos, que formata as datas para uma string mais legível para a pessoa usuária? Este é o momento perfeito para utilizá-la.
+
+Botões de remarcar e cancelar consulta
+Como vamos fazer isso? Na nossa opinião, a abordagem mais flexível é passar um parâmetro opcional ao SpecialistCardView. Após var specialist, vamos começar definindo uma variável var chamada appointment, que será do tipo Appointment opcional.
+
+SpecialistCardView.swift:
+struct SpecialistCardView: View {
+    
+    var specialist: Specialist
+    var appointment: Appointment?
+
+    // código omitido…
+}
+COPIAR CÓDIGO
+Isso significa que, se passamos um agendamento para o SpecialistCardView, os dois botões irão aparecer, além da data e hora da consulta.
+
+Vamos agora fazer uma verificação. No NavigationLink nesse mesmo arquivo, é onde temos o ButtonView() com o texto "Agendar Consulta".
+
+Vamos criar uma verificação acima disso: if let appointment = appointment. Contudo, vale lembrar que nas versões mais recentes do Swift não é mais preciso igualar uma variável.
+
+Então, poderíamos simplesmente escrever if let appointment. Estamos tentando desembrilhar a variável opcional.
+
+Se tivermos um agendamento, vamos criar um contêiner horizontal HStack que terá dois botões. Portanto, teremos um Button() com uma action e label.
+
+O primeiro botão tem como action um simples print() da string Botão de remarcar pressionado!. Posteriormente, vamos alterar isso para um NavigationLink, mas não vamos focar nisso agora.
+
+Enquanto a label desse botão será uma ButtonView(), para a qual passaremos o text como Remarcar.
+
+Vamos copiar este botão e colá-lo logo abaixo. Agora, a ação do segundo botão será um print() de Botão de cancelar pressionado. E, na ButtonView(), o texto será Cancelar, ao invés de Remarcar.
+
+Agora passaremos o parâmetro buttonType para ButtonView(), porque vamos passar o tipo .cancel, para que fique com a cor vermelha.
+
+Depois, vamos criar um else logo após o if. Basta mover o NavigationLink do botão de "Agendar Consulta" para dentro desse else, usando "Command+X" e "Command+V".
+
+    if let appointment {
+        HStack {
+            Button(action: {
+                print("Botão de remarcar pressionado!")
+            } label: {
+                ButtonView(text: "Remarcar")
+            })
+            
+            Button(action: {
+                print("Botão de cancelar pressionado!")
+            }, label: {
+                ButtonView(text: "Cancelar", buttonType: .cancel)
+            })
+        }
+    } else {
+        NavigationLink {
+            ScheduleAppointmentView(specialistID: specialist.id)
+        } label: {
+            ButtonView(text: "Agendar consulta")
+        }
+    }
+}
+COPIAR CÓDIGO
+Data e hora da consulta
+Agora, dentro do VStack() com o nome do especialista, após o texto de specialist.specialty que é a especialidade do médico, também faremos uma verificação.
+
+Para isso, digitamos if let appointment. Entre chaves, colocamos um novo Text() que será appointment.date.convertDateStringToReadableDate().
+
+Desse modo, o novo texto será a data da consulta, convertida pela função que criamos na extensão de uma String.
+
+Em seguida, vamos adicionar um modificador .bold(), para que o texto fique em negrito.
+
+VStack(alignment: .leading, spacing: 8.0) {
+    Text(specialist.name)
+        .font(.title3)
+        .bold()
+    Text(specialist.specialty)
+    if let appointment {
+        Text(appointment.date.convertDateStringToReadableDate())
+            .bold()
+    }
+}
+COPIAR CÓDIGO
+Agora, vamos voltar em MyAppointmentsView. Na linha 29, quando chamamos o SpecialistCardView(), após passar o specialist, também passaremos o appointment e a variável appointment.
+
+MyAppointmentsView.swift:
+ScrollView(showsIndicators: false) {
+    ForEach(appointments) { appointment in
+        SpecialistCardView(specialist: appointment.specialist, appointment: appointment)
+    }
+}
+COPIAR CÓDIGO
+Com isso, a tela de pré-visualização já nos mostra tanto o botão de remarcar, quanto o botão de cancelar, e também o texto com a data da consulta.
+
+Pronto, agora temos uma tela totalmente funcional, mostrando os cards de SpecialistCardView, de forma totalmente adaptável e reutilizável.
+
+@@05
+Adaptando a tela de agendamento para ser dinâmica
+
+Vamos começar a criar a tela de reagendamento de uma consulta. Essa tela será idêntica à tela de agendamento. Teremos o texto "selecione a data e horário", e também um calendário, com algumas exceções.
+Por exemplo, na ScheduleAppointmentView, que é a tela de agendamento, tem um botão "Agendar Consulta". Mas, na tela de reagendamento, será "Remarcar Consulta".
+
+Entretanto, são extremamente parecidas. Por isso, ao invés de criar uma nova view chamada RescheduleApoointmentView, vamos fazer algumas modificações na ScheduleAppointmentView, para que ela trate tanto do agendamento quanto do reagendamento.
+
+Mas, como faremos isso?
+
+Reagendamento da consulta
+Primeiro, vamos passar um novo parâmetro para a tela de ScheduleAppointmentView. Vamos criar uma variável var chamada isRescheduleView, do tipo booleano.
+
+Em seguida, criaremos um construtor para que, caso essa variável isRescheduleView não seja passada como parâmetro, o valor dela deve ser falso por padrão.
+
+Vamos definir o init(). Como parâmetro, vamos passar specialistID do tipo String e isRescheduleView do tipo Bool, mas ela terá um valor padrão. Por isso, vamos acrescentar que ela é igual à false.
+
+Dentro do construtor, vamos colocar self.specialistID igual à specialistID e self.isRescheduleView igual à isRescheduleView.
+
+Agora vamos fazer algumas modificações. Vamos criar outra função chamada rescheduleAppointment(), que será assíncrona.
+
+ScheduleAppointmentView.swift:
+struct ScheduleAppointmentView: View {
+    
+    let service = WebService()
+    var specialistID: String
+    var isRescheduleView: Bool
+    
+    @State private var selectedDate = Date()
+    @State private var showAlert = false
+    @State private var isAppointmentScheduled = false
+    
+    init(specialistID: String, isRescheduleView: Bool = false) {
+        self.specialistID = specialistID
+        self.isRescheduleView = isRescheduleView
+    }
+
+    func rescheduleAppointment() async {
+    } 
+
+    // código omitido…
+}
+COPIAR CÓDIGO
+Na linha 61, onde definimos o botão "Agendar Consulta", vamos usar um operador ternário. Após text:, vamos verificar isRescheduleView ?. Se for verdadeiro, vamos mostrar a string Reagendar Consulta. Caso contrário, acrescentamos dois-pontos e mantemos Agendar Consulta.
+
+Assim, verificamos se isRescheduleView é verdadeiro. Se sim, entramos na primeira condição que mostra o texto Reagendar consulta. Senão, entramos na outra condição e vai mostrar o texto Agendar Consulta.
+
+Faremos o mesmo para o navigationTitle() definido na linha 65. Podemos até copiar o operador ternário de isRescheduleView com as strings. No navigationTitle(), apagamos a string antiga e colamos a nova operação.
+
+Mas, ainda temos outros lugares para verificar se a view é de reagendamento ou agendamento. Dentro da ação do botão, dentro do Task do contexto assíncrono, também faremos essa verificação com if e else.
+
+Se isRescheduleView for verdadeira, colocaremos um await e chamaremos a função de reagendamento, rescheduleAppointment(). Senão, colocamos um else onde passamos um await e chamamos a função de agendamento, scheduleAppointment().
+
+    Button(action: {
+        Task {
+            if isRescheduleView {
+                await rescheduleAppointment()
+            } else {
+                await scheduleAppointment()
+            }
+        }
+    }, label: {
+        ButtonView(text: isRescheduleView ? "Reagendar consulta" : "Agendar consulta")
+    })
+}
+.padding()
+.navigationTitle(isRescheduleView ? "Reagendar consulta" : "Agendar consulta")
+.navigationBarTitleDisplayMode(.large)
+COPIAR CÓDIGO
+Outro lugar de verificação é no .alert(), porque nas mensagens do alerta, temos a string a consulta foi agendada com sucesso.
+
+Então, devemos fazer uma interpolação de variável dentro do Text() do if da mensagem. Após a palavra foi, vamos colocar uma barra invertida e parênteses para acrescentar novamente um operador ternário.
+
+Com isso, vamos verificar se isRescheduleView é verdadeira. Se sim, a string será "reagendada". Caso contário, será "agendada". Podemos remover a palavra "agendada" que estava duplicada fora da interpolação.
+
+De modo semelhante, faremos o mesmo no else, onde está a mensagem de erro. Copiamos a interpolação, mas trocamos as strings para "reagendar" e "agendar", respectivamente.
+
+.alert(isAppointmentScheduled ? "Sucesso!" : "Ops, algo deu errado!", isPresented: $showAlert, presenting: isAppointmentScheduled) { _ in
+    Button(action: {}, label: {
+        Text("Ok")
+    })
+} message: { isScheduled in
+    if isScheduled {
+        Text("A consulta foi \(isRescheduleView ? "reagendada" : "agendada") com sucesso!")
+    } else {
+        Text("Houve um erro ao \(isRescheduleView ? "reagendar" : "agendar") sua consulta. Por favor tente novamente ou entre em contato via telefone.")
+    }
+}
+COPIAR CÓDIGO
+Com isso, temos todas as modificações necessárias. Entretanto, temos mais um parâmetro para lidar.
+
+Na rota Atualiza consulta no Insomnia, podemos verificar que deve-se passar também o ID da consulta:
+
+localhost:3000/consulta/:id
+COPIAR CÓDIGO
+Se voltarmos ao Xcode, notamos que a ScheduleAppointmentView não tem esse ID da consulta. Somente adicionamos um parâmetro isRescheduleView indicando se a tela em questão é de marcação ou de remarcação.
+
+Portanto, vamos acrescentar mais um parâmetro, que chamaremos de appointmentID. Ele será do tipo String e também opcional.
+
+Agora, é preciso fazer algumas modificações no construtor. Vamos incluir o atributo appointmentID, que é uma String opcional. Se não for passado um valor, ela terá o valor nil por padrão.
+
+Por fim, vamos passar o self.appointmentID igual ao appointmentID.
+
+struct ScheduleAppointmentView: View {
+    
+    let service = WebService()
+    var specialistID: String
+    var isRescheduleView: Bool
+    var appointmentID: String?
+
+    // código omitido…
+    
+    init(specialistID: String, isRescheduleView: Bool = false, appointmentID: String? = nil) {
+        self.specialistID = specialistID
+        self.isRescheduleView = isRescheduleView
+        self.appointmentID = appointmentID
+    }
+
+    // código omitido…
+}
+COPIAR CÓDIGO
+Agora precisamos passar este appointmentID para a ScheduleAppointmentView, quando estivermos na tela de "Minhas consultas". Para isso, vamos ao arquivo SpecialistaCardView, pois precisamos fazer uma modificação na action do botão de remarcar consulta.
+
+Em vez da função de print("Botão de remarcar pressionado!"), queremos que este botão chame a ScheduleAppointmentView.
+
+Por isso, vamos substituir o Button() por um NavigationLink, passando destination.
+
+Qual a tela de destino? Será ScheduleAppointmentView(). O specialistID será appointment.specialist.id. Mas, na verdade, também temos o specialist, portanto, você poderia passar somente specialist.id. Fica a seu critério.
+
+Agora, vamos passar o parâmetro isRescheduleView, que será true e também o parâmetro appointmentID, que será appointment.id.
+
+Como label, vamos passar um ButtonView() com o texto Remarcar.
+
+SpecialistaCardView.swift:
+if let appointment {
+    HStack {
+        NavigationLink {
+            ScheduleAppointmentView(specialistID: appointment.specialist.id, isRescheduleView: true, appointmentID: appointment.id)
+        } label: {
+            ButtonView(text: "Remarcar")
+        }
+        
+        // código omitido…
+    }
+COPIAR CÓDIGO
+Vamos testar se o código funciona. Após executar o código, vamos em "Minhas consultas" para tentar remarcar uma consulta do Dr. João da Silva.
+
+Com isso, vamos para uma tela intitulada "Reagendar consulta" que contém o botão de "Reagendar consulta". Está funcionando da maneira esperada.
+
+Para garantir que tudo está funcionando corretamente, vamos voltar na ScheduleAppointmentView.
+
+Dentro dessa função rescheduleAppointment(), vamos desembrulhar a variável appointmentID, porque ela é opcional. Então, colocaremos guard let appointmentID else.
+
+Dentro das chaves, vamos colocar um print("Houve um erro ao obter o ID da consulta."), porque isso cairá no caso de else. Em seguida, iremos simplesmente fazer um return.
+
+Em versões mais recentes do Swift, você não precisa fazer guard let id = appointmentID, só de fazer guard let appointmentID, a variável já será desembrulhada.
+
+Por fim, fora das chaves, vamos dar um print(appointmentID) apenas para verificar se está funcionando corretamente.
+
+ScheduleAppointmentView.swift:
+func rescheduleAppointment() async {
+    guard let appointmentID else {
+        print("Houve um erro ao obter o ID da consulta")
+        return
+    }
+    print(appointmentID)
+}
+COPIAR CÓDIGO
+Em "Minhas Consultas", vamos remarcar uma consulta com o Dr. João da Silva, clicando em "Remarcar". Em seguida, vamos clicar em "Reagendar Consulta".
+
+25aeee0a-2d94-41c6-82c3-d98e42236a61
+É impresso o ID dessa consulta. Está tudo funcionando conforme o esperado.
+
+Agora, tudo o que precisamos fazer é implementar a requisição em si. Te esperamos no próximo vídeo.
+
+@@06
+Faça como eu fiz: tela de consultas de um paciente
+
+Hora de colocar seus conhecimentos em prática com o que vimos durante os vídeos!
+1 - Criando a requisição para obter todas as consultas de um paciente:
+
+a) Defina o modelo Appointment e a função para obter todas as consultas de um paciente:
+struct Appointment: Identifiable, Codable { ... }
+
+func getAllAppointmentsFromPatient(patientID: String) async throws -> [Appointment]? { ... }
+COPIAR CÓDIGO
+2 - Adicionando botões de remarcação e cancelamento de uma consulta:
+
+a) Estenda o SpecialistCardView para aceitar um Appointment opcional e mostrar botões diferentes com base na presença de uma consulta:
+        struct SpecialistCardView: View {
+            var specialist: Specialist
+            var appointment: Appointment?
+            ...
+        }
+COPIAR CÓDIGO
+b) Altere o uso do SpecialistCardView na tela de consultas para passar a consulta:
+SpecialistCardView(specialist: appointment.specialist, appointment: appointment)
+COPIAR CÓDIGO
+3 - Adaptando a tela de agendamento para ser dinâmica:
+
+a) Adicione uma propriedade isRescheduleView à ScheduleAppointmentView para determinar se a visualização está sendo usada para reagendar ou agendar uma nova consulta.
+b) Com base nessa propriedade, mostre o título e o texto do botão apropriados. Além disso, modifique o alerta também:
+.navigationTitle(isRescheduleView ? "Reagendar consulta" : "Agendar consulta")
+
+ButtonView(text: isRescheduleView ? "Reagendar consulta" : "Agendar consulta")
+COPIAR CÓDIGO
+c) Adapte a lógica do botão de ação para lidar com reagendamento ou agendamento com base na flag isRescheduleView.
+Bons estudos!
+
+A capacidade de adaptar a interface do usuário com base no estado ou nas propriedades do aplicativo é uma habilidade essencial para criar aplicativos dinâmicos e interativos. Com essas modificações, a aplicação agora oferece uma experiência de usuário mais flexível e intuitiva.
+Fique à vontade para experimentar mais combinações e fluxos de UI para melhorar ainda mais a experiência do usuário. E, como sempre, se tiver dúvidas, estou aqui para ajudar!
+
+Dê uma olhada em como o projeto se parece agora no link para a branch no GitHub.
+
+Até a próxima aula!
+
+https://github.com/alura-cursos/swiftui-vollmed-crud/tree/aula-05
+
+@@07
+O que aprendemos?
+
+Nesta aula, você aprendeu a:
+Criar uma requisição para obter todas as consultas associadas a um paciente;
+Adicionar botões para a remarcação e cancelamento de consultas;
+Adaptar a tela de agendamento para ser dinâmica e reutilizável.
+Continue assim! O aplicativo está ficando mais completo.
+
+Vejo você na última aula!
