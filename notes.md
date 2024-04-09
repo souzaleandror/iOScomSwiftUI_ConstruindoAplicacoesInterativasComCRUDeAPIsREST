@@ -3597,3 +3597,704 @@ Adaptar a tela de agendamento para ser dinâmica e reutilizável.
 Continue assim! O aplicativo está ficando mais completo.
 
 Vejo você na última aula!
+
+#### 09/04/2024
+
+@06-Requisições PATCH e DELETE
+
+@@01
+Projeto da aula anterior
+
+Você pode revisar o seu código e acompanhar o passo a passo do desenvolvimento do nosso projeto através desta branch no Github e, se preferir, pode baixar o projeto da aula anterior.
+Bons estudos!
+
+https://github.com/alura-cursos/swiftui-vollmed-crud/tree/aula-05
+
+https://github.com/alura-cursos/swiftui-vollmed-crud/archive/refs/heads/aula-05.zip
+
+@@02
+Implementando a requisição PATCH
+
+Vamos entender como funciona a requisição para remarcarmos uma consulta. Voltaremos ao Insomnia e, na coluna da esquerda, acessaremos "Consulta > Atualiza consulta" para abrimos nossa requisição. A Atualiza consulta possui o verbo PATCH.
+Quando lidamos com a atualização de informações, temos dois verbos principais: PUT e PATCH. Estamos utilizando PATCH em vez de PUT porque estamos atualizando apenas uma informação, no caso, a data da consulta. Deste modo, ao atualizarmos uma informação em um arquivo JSON, utilizamos o PATCH ao invés do PUT.
+
+Nessa requisição JSON, enviamos um único atributo: a data que representa a nova data da consulta. Para isso, a URL é composta de consulta/:id, no caso, estamos passando o ID da minha consulta.
+
+PATCH localhost:3000/consulta/:id
+{
+"data": "2023-10-15T13:45/:00.000"
+}
+COPIAR CÓDIGO
+Vamos testar essa requisição. Para isso, enviaremos a requisição Lista todas consultas e, com o resultado, copiaremos o ID do primeiro registro, selecionando o ID e pressionando "Cmd + C". Depois, voltamos para requisição Atualiza consulta e colaremos o ID no endereço, com "Cmd + V".
+
+Entretanto, a data que está no JSON da nossa requisição, dia 15 de outubro, é um domingo, quando a clínica não opera, então ocorreria um erro. Sendo assim, mudaremos a data para 16 de outubro e clicaremos em "Send" para enviar a requisição de mudança.
+
+PATCH localhost:3000/consulta/25aeee0a-2094-41c6-82c3-d98e42236a61
+{
+"data": "2023-10-16T13:45/:00.000"
+}
+COPIAR CÓDIGO
+Retorno da requisição:
+{
+"especialista": "b6156016-8329-4698-988c-b3b38aa585",
+"paciente": "e34db028-3445-4fbf-a744-ba578754da84",
+"data": "2023-18-16T13:45:00.000",
+"motivoCancelamento": null,
+"id": "25aeee0a-2094-41c6-82c3-d98e42236a61"
+}
+COPIAR CÓDIGO
+Ótimo, a atualização da consulta foi bem-sucedida! O retorno é igual ao agendamento de uma consulta, isto é, os mesmos atributos definidos na struct ScheduleAppointmentResponse do projeto em iOS.
+
+Continuando, vamos implementar a função. Para isso, voltaremos ao Xcode e, na coluna da esquerda, acessaremos "Service > WebService.swift. No arquivo WebService,na linha 16 criaremos a função rescheduleAppointment(), que receberá dois parâmetros: o appointmentId: String e date: String. Ambos são arquivos strings, sendo que o primeiro representa a data antiga e o segundo a data nova.
+
+func rescheduleAppointment(appointmenteID: String, date: String) async throws -> ScheduleAppointmentResponse? {
+    let endpoint = baseUrl + "/consulta/" + appointmentId
+
+        guard let url = URL(string: endpoint) else {
+                print("Erro na URL!")
+                return nil
+        }
+}
+COPIAR CÓDIGO
+Nossa função é uma async throws cujo retorno é um ScheduleAppointmentResponse opcional. E nosso endpoint é uma variável constante que é igual à URL base concatenado à /consulta/ e o ID da consulta.
+
+Criada essa função, dentro dela iremos tratar a URL. Para isso, recortaremos o trecho de código da url, que está na linha 25, e colaremos dentro dessa função. Por fim, precisamos enviar o JSON contendo o atributo data.
+
+func rescheduleAppointment(appointmenteID: String, date: String) async throws -> ScheduleAppointmentResponse? {
+    let endpoint = baseUrl + "/consulta/" + appointmentId
+}
+COPIAR CÓDIGO
+Na requisição post que fizemos ao criar uma consulta, utilizamos o modelo de dados ScheduleAppointmentRequest(), que criamos passando os três atributos necessários. Em seguida, convertemos eles para JSON no jsonData. Contudo, no rescheduleAppointment() temos apenas um atributo: a data.
+
+Não precisamos criar um modelo para armazenar esse único atributo. Ao invés disso, criaremos a constante resquestData que será um dicionário, isto é, um tipo de dado que contém uma chave e um valor.
+
+A chave desse dicionário será uma string, assim como o valor, então escrevemos [String: String]. Em seguida, podemos definir a chave, que é o atributo "data", ou seja, o JSON que a API está recebendo. O valor é a date, que passamos para função rescheduleAppointment(). Portanto. após o fechamento do else na url codamos:
+
+let resquestData: [String: String] = ["data":date]
+COPIAR CÓDIGO
+Agora precisamos converter o dicionário requestData em um JSON. Isso pode ser feito utilizando o JSONSerialization. Então criaremos uma constante chamada jsonData para converter o dicionário em JSON.
+
+// código omitido
+
+let requestData: [String: String] = ["data":date]
+
+let jsonData = try JSONSerialization.data(withJSONObject: requestData)
+
+// código omitido
+COPIAR CÓDIGO
+Não precisamos instanciar o JSONSerialization, e nele usamos a primeira sugestão do XCode ao digitarmos data, que é o data(withJSONObject:), para o qual passamos o resquestData, que é o nosso dicionário. Dessa forma compartilhamos nosso dicionário em formato JSON. Continuaremos com a requisição, que será bastante similar à requisição POST.
+
+// código omitido
+
+let requestData: [String: String] = ["data": date]
+
+let jsonData = try JSONSerialization.data(withJSONObject: requestData)
+
+var request = URLRequest(url: url)
+request.httpMethod = "PATCH"
+request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+request.httpBody = jsonData
+
+// código omitido
+COPIAR CÓDIGO
+Então criamos outra variável, chamada request, equivalente à URLRequest(url: URL). Abaixo de resquest, definimos nosso método HTTP como request.httpMethod = "PATCH".
+
+Também definimos o cabeçalho, codando request.setValue("application/json", forHTTPHeaderField: "Content-Type"), indicando que estamos passando um JSON par essa requisição. Por fim, estabelecemos o request.httpBody = jsonData.
+
+Depois chamamos a URLSession, novamente resetando a dupla com o let (data, _). Em seguida, decodificamos esses dados para o meu modelo ScheduleAppointmentResponse(), codando o appointmentResponse. Por último, retornamos o AppointmentResponse.
+
+func rescheduleAppointment(appointmentID: String, date: String) async throws -> ScheduleAppointmentResponse? {
+        let endpoint = baseURL + "/consulta/" + appointmentID
+
+        guard let url = URL(string: endpoint) else {
+                print("Erro na URL!")
+                return nil
+        }
+
+        let requestData: [String: String] = ["data": date]
+
+        let jsonData = try JSONSerialization.data(withJSONObject: requestData)
+
+        var request = URLRequest(url: url)
+        request.httpMethod = "PATCH"
+        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        request.httpBody = jsonData
+
+        let (data, _) = try await URLSession.shared.data(for: request)
+
+        let appointmentResponse = try JSONDecoder().decode(ScheduleAppointmentResponse.self, from: data)
+
+        return appointmentResponse
+}
+COPIAR CÓDIGO
+Não posso garantir que está funcionando no momento, mas ao menos a requisição foi criada. Agora acessaremos o ScheduleAppointmentView.swift, onde chamaremos essa função. Será muito similar à função scheduleAppointment que já temos.
+
+Dentro da função rescheduleAppoint(), que começa por volta da linha 28, apagaremos o print(appointmentID), que está na linha 33. No lugar, escreveremos um do/cacth. Nesse catch, codaremos um print("Ocorreu um erro ao remarcar consulta: \(error)") para tratarmos o erro. Depois, codaremos o do.
+
+do {
+        if let _ = try await service.rescheduleAppointment(appointmentID: appointmentID, date: selectedDate.convertToString()) {
+                isAppointmentScheduled = true
+        } else {
+                isAppointmentScheduled = false
+        }
+} catch {
+        print("Ocorreu um erro ao remarcar consulta: \(error)")
+        isAppointmentScheduled = false
+}
+showAlert = true
+COPIAR CÓDIGO
+Com essa estrutura, se tudo der certo, manipulamos as variáveis referentes ao alerta. Por isso, após o fechamento de chaves do catch, codamos showAlert = true, para mostrar o alerta em qualquer caso. E no meu catch, estabelecemos isAppointmentSchedule = false, pois ocorreu um erro.
+
+Também criamos no if outra variável isAppointmentSchedule, dessa vez como true. Já no else, codamos o isAppointmentSchedule = false. E como eu não utilizamos a variável appointment para nada, substituímos ela com um underline (_) em if let _. Vamos verificar se está funcionando, pressionando "Cmd + R"
+
+func rescheduleAppointment() async {
+        guard let appointmentID else {
+                print("Houve um erro ao obter o ID da consulta")
+                return
+        }
+        do {
+                if let _ = try await service.rescheduleAppointment(appointmentID: appointmentID, date: selectedDate.convertToString()) {
+                        isAppointmentScheduled = true
+                } else {
+                        isAppointmentScheduled = false
+                }
+        } catch {
+                print("Ocorreu um erro ao remarcar consulta: \(error)")
+                isAppointmentScheduled = false
+        }
+        showAlert = true
+}
+COPIAR CÓDIGO
+No nosso emulador, temos uma consulta com o Dr. João da Silva marcada para o dia 16 de outubro. Clicamos no botão "Remarcar", e vamos para tela de calendário, onde clicaremos no dia 29, mudando a consulta para 29 de setembro. Também mudaremos o horário para 4:30PM (16h30).
+
+Ao clicarmos em "Reagendar consulta", na parte inferior da tela, recebemos uma mensagem de sucesso no centro da tela. Quando voltamos para tela "Minhas consultas", observamos que a data da consulta do card que escolhemos mudou. Agora, a consulta está marcada para o dia 29 de setembro às 16h30. Portanto, conseguimos reagendar a consulta com sucesso.
+
+@@03
+Para saber mais: requisição PATCH
+
+Nesta aula, conhecemos um novo tipo de requisição: PATCH.
+O que é a requisição PATCH?
+Como vimos em aula, existem situações de uma consulta em que vamos alterar apenas alguns dados, mas não todos. É nesses casos em que utilizamos a requisição PATCH.
+
+A requisição PATCH é um método HTTP que permite que você atualize parcialmente um recurso no servidor. Ao contrário da requisição PUT, que substitui completamente um recurso, o PATCH permite que você envie apenas as modificações desejadas para o servidor, economizando largura de banda e tempo. No Swift UI, você pode usar essa requisição para interagir com APIs RESTful ou outras fontes de dados remotas de forma eficiente.
+
+Assim, se pensamos no CRUD, a requisição PATCH está dentro de update (atualizar).
+Para que serve a requisição PATCH?
+A principal finalidade da requisição PATCH é permitir atualizações parciais e precisas de recursos no servidor. Ela é especialmente útil quando você deseja alterar apenas alguns campos de um objeto sem modificar o resto do conteúdo. Além disso, a requisição PATCH é fundamental quando se trata de manter a integridade dos dados, uma vez que evita sobrescrever informações desnecessariamente.
+
+Vamos ver outros exemplos práticos?
+
+Exemplos práticos
+1) Atualização de perfil de usuário
+Imagine um aplicativo de rede social em que os usuários podem atualizar informações do perfil, como a foto do perfil, a descrição e as configurações de privacidade. Usando a requisição PATCH, você pode enviar apenas as alterações feitas pelo usuário, garantindo que outros detalhes do perfil permaneçam intactos.
+
+2) Marcação de itens como favoritos
+Em um aplicativo de lista de tarefas, você pode permitir que os usuários marquem itens como favoritos. A requisição PATCH pode ser usada para atualizar apenas o estado "favorito" de um item, sem afetar outros campos.
+
+3) Personalização de configurações
+Se o seu aplicativo permitir que os usuários personalizem configurações, como tema de cores ou notificações, a requisição PATCH pode ser usada para atualizar apenas as preferências selecionadas, sem afetar outras configurações.
+
+Conclusão
+A requisição PATCH é uma ferramenta poderosa no Swift UI para atualizar recursos de forma eficiente e precisa. Ela permite que você economize dados e internet, mantenha a integridade dos dados e forneça uma experiência de usuário mais rápida.
+
+@@04
+Construindo a tela de cancelamento
+
+Agora criaremos a nossa tela para cancelar uma consulta. Para isso, na coluna de esquerda, clicaremos com o botão direito na pasta "Views". Selecionamos "New File" para criar um novo arquivo e, na janela que abre no centro da tela, escolhemos "SwiftUI View" e clicamos em "Next". Na janela de especificações do arquivo, o nomearemos como CancelAppointmentView. Pressionamos "Enter" e criamos o arquivo.
+O CancelAppointmentView.swift é uma tela que terá um campo de texto onde a pessoa usuária precisa explicar o motivo pelo qual está cancelando a consulta. Passaremos esse motivo para a nossa requisição à API.
+
+Por alguma razão, quando tentamos rodar nosso Preview, encontramos um erro. Não consigo entender o porquê. Não se preocupem, porque esses erros podem ocorrer no Xcode. Como a nossa aplicação continua funcionando com sucesso, vamos continuar.
+
+Na linha 12, ao invés do Text("Hello, World"), escreveremos um VStack(spacing: 16.0), para adicionarmos um espaçamento entre as views de 16. Dentro do meu VStack(), escreveremos um Text("Conte-nos o motivo do cancelamento da sua consulta").
+
+Adicionaremos alguns modificadores de propriedade nesse texto. Começando pelo .font(.title3), depois escreveremos .bold() para deixá-lo em negrito e foregroundStyle(.accent) para deixá-lo na tonalidade de azul que definimos. Também acrescentaremos um padding(.top) e centralizaremos o texto com multilineTextAlignment(.center).
+
+struct CancelAppointmentView: View {
+    var body: some View {
+        VStack(spacing: 16.0) {
+            Text("Conte-nos o motivo do cancelamento da sua consulta")
+                .font(.title3)
+                .bold()
+                .foregroundStyle(.accent)
+                .padding(.top)
+                .multilineTextAlignment(.center)
+        }
+    }
+}
+COPIAR CÓDIGO
+Agora nossa visualização carregou e podemos ver como o texto está ficando na View à direita. E para permitir que a pessoa usuária digite o motivo do cancelamento, podemos utilizar um componente chamado TextEditor().
+
+Quando digitamos TextEditor após nossas formatações de texto, ainda dentro do VStack, o XCode mostra algumas sugestões. Selecionaremos a TextEditor(text:), que é a segunda opção, por ela passar um binding para uma String.
+
+struct CancelAppointmentView: View {
+
+    var body: some View {
+        VStack(spacing: 16.0) {
+            Text("Conte-nos o motivo do cancelamento da sua consulta")
+                .font(.title3)
+                .bold()
+                .foregroundStyle(.accent)
+                .padding(.top)
+                .multilineTextAlignment(.center)
+        }
+    }
+}
+COPIAR CÓDIGO
+Isso significa que precisaremos criar uma variável de estado, então, na linha acima do body, escreveremos @State: private var reasonToCancel = "", ou seja, estamos iniciando essa variável como uma string vazia. Além disso, como biding, passaremos a variável $reasonToCancel.
+
+struct CancelAppointmentView: View {
+
+    @State private var reasonToCancel = ""
+
+    var body: some View {
+        VStack(spacing: 16.0) {
+            Text("Conte-nos o motivo do cancelamento da sua consulta")
+                .font(.title3)
+                .bold()
+                .foregroundStyle(.accent)
+                .padding(.top)
+                .multilineTextAlignment(.center)
+
+            TextEditor(text: $reasonToCancel)
+        }
+    }
+}
+COPIAR CÓDIGO
+Na nossa View, embora não consigamos ver exatamente o campo de texto, ao clicarmos na tela em branco abaixo do título, aparece uma barra vertical de cursor, indicando que podemos escrever um texto.
+
+Agora adicionaremos alguns modificadores nesse Text Editor. Primeiro, um padding(). Também aumentaremos a fonte do texto que será escrito pela pessoa usuária, com .font(.title3) e mudaremos o estilo do texto com .foregroundStyle(accent), deixando em um tom de azul. Caso queiram, podem deixar preto, isso não muda muito.
+
+Adicionaremos também uma cor de fundo ao TextEditor(). Para isso, adicionaremos o modificador .scrollContentBackground(.hidden) e codaremos .background(Color(.ligthBlue)) para adicionarmos a cor de fundo azul clara. Como esse azul é muito intenso, após Color() aplicaremos o .opacity(0.015).
+
+Observação: Se o modificador scrollContrentBackgroud() não for aplicado, a cor do plano de fundo ficará somente como uma borda e haverá um retângulo branco no centro da caixa de texto. Com esse modificador, ele esconde o plano de fundo branco e conseguimos ver toda tela abaixo do texto com a escolhida.
+Além disso, também adicionaremos um .cornerRadius (16.0) para deixar as pontas do Textditor() com um formato arredondado. Não ficou tão visível na View porque precisamos adicionar um .padding() ao VStack(), portanto, após o fechamento de chaves no VStack(), mas dentro do body, codaremos .padding().
+
+Com isso, visualizamos melhor o arredondamento dos cantos. Por fim, delimitaremos a altura do Text Editor, porque estou achando muito grande. Para isso, ao final de modificações do TextEditor(), codaremos .frame(maxHeight: 300), inserindo o valor 300 para altura máxima.
+
+var body: some View {
+    VStack(spacing: 16.0) {
+        Text("Conte-nos o motivo do cancelamento da sua consulta")
+            .font(.title3)
+            .bold()
+            .foregroundStyle(.accent)
+            .padding(.top)
+            .multilineTextAlignment(.center)
+
+        TextEditor(text: $reasonToCancel)
+            .padding()
+            .font(.title3)
+            .foregroundStyle(.accent)
+            .scrollContentBackground(.hidden)
+            .background(Color(.lightBlue).opacity(0.15))
+            .cornerRadius(16.0)
+            .frame(maxHeight: 300)
+    }
+    .padding()
+}
+COPIAR CÓDIGO
+Após o .padding(), adicionaremos os modificadores de navegação. Começaremos pelo .navigationTitle("Cancelar consulta"). Em seguida, adicionaremos o navigationBarTitleDisplayMode(.large).
+
+var body: some View {
+    VStack(spacing: 16.0) {
+        //código omitido
+    }
+    .padding()
+    .navigationTitle("Cancelar consulta")
+    .navigationBarTitleDisplayMode(.large)
+COPIAR CÓDIGO
+Agora, precisamos apenas adicionar um botão. Para isso, dentro do VStack(), após o TextEditor() e seus atributos, codaremos Button(action: {}, label:{}). Para a ação, neste momento escreveremos apenas print("Botão pressionado!"). Já na label, passaremos o componente ButtonView(text: "Cancelar consulta", buttonType: .cancel), ou seja, definimos o texto como "Cancelar consulta" e o tipo do botão como .cancel para torná-lo vermelho.
+
+VStack(spacing: 16.0) {
+    Text("Conte-nos o motivo do cancelamento da sua consulta")
+        .font(.title3)
+        .bold()
+        .foregroundStyle(.accent)
+        .padding(.top)
+        .multilineTextAlignment(.center)
+
+    TextEditor(text: $reasonToCancel)
+        .padding()
+        .font(.title3)
+        .foregroundStyle(.accent)
+        .scrollContentBackground(.hidden)
+        .background(Color(.lightBlue).opacity(0.15))
+        .cornerRadius(16.0)
+        .frame(maxHeight: 300)
+
+    Button(action: {
+        Task {
+            print("Botão pressionado!")
+        }
+    }, label: {
+        ButtonView(text: "Cancelar consulta", buttonType: .cancel)
+    })
+}
+COPIAR CÓDIGO
+Agora temos nossa tela de cancelamento pronta para cancelar uma consulta. A seguir, precisamos chamar esta tela, então, na coluna da esquerda, navegaremos para "Views > Components > SpecialistCardView.swift.
+
+No SpecialistCardView, ainda não temos o NavigationLink para o botão de cancelamento, então criaremos um. Na linha 62, acima do Button de cancelar, codaremos o NavigationLink com o Destination (Destino) para tela CancelAppointmentView().
+
+Já a label será o ButtonView() que copiaremos de dentro da label do botão abaixo, na linha 72. Em seguida apagaremos este botão, ou seja, apagaremos da linha 69 a 73.
+
+NavigationLink {
+    CancelAppointmentView()
+} label: {
+    ButtonView(text: "Cancelar", buttonType: .cancel)
+}
+COPIAR CÓDIGO
+Vamos executar este código e verificar se está funcionando. Quando abrimos a tela "Minhas consultas" no emulador, clicando no botão inferior direito, e clicamos no botão "Cancelar" no card, temos um direcionamento para tela "Cancelar consulta" que criamos.
+
+@@05
+Implementando a requisição DELETE
+
+Vamos retornar ao Insomnia e analisar como funciona a requisição para deletar, ou seja, para remover uma consulta. No JSON "Apaga consulta", passamos um JSON com um único atributo, o "motivo_cancelamento", que é a única chave. E a nossa rota termina em /consulta/:id. Isso significa que nós precisamos ter o ID da consulta na tela de cancelamento, e, no momento, ainda não temos isso.
+Portanto, retornaremos ao meu Xcode e acessaremos o arquivo CancelAppointmentView. No começo da estrutura, na linha acima da variável de estado reasonToCancel, codaremos a var appointmentID: String.
+
+Agora, preciso passar essa variável para a minha tela CancelAppointmentView(), que está sendo chamada na SpecialistCardView.swift. Ao acessarmos esse arquivo, já recebemos a mensagem de erro e, ao clicarmos em "Fix" (Consertar), no canto inferior direito da mensagem, o CancelAppointmentView() recebeu como parâmetro (appointmentID: ).
+
+O appointmentID será obtido através da variável appointment, que está no nosso body, porque nós estamos descompactando. Dessa variável, extrairemos o ID, então passaremos appointment.id.
+
+Arquivo ScheduleAppointmentView
+//código omitido
+
+if let appointment {
+    HStack {
+        NavigationLink {
+            ScheduleAppointmentView(specialistID: appointment.specialist.id, isRescheduleView: true, appointmentID: appointment.id)
+        } label: {
+            ButtonView(text: "Remarcar")
+        }
+
+        NavigationLink {
+            CancelAppointmentView(appointmentID: appointment.id)
+        } label: {
+            ButtonView(text: "Cancelar", buttonType: .cancel)
+        }
+    }
+}
+//código omitido
+COPIAR CÓDIGO
+Portanto, nossa CancelAppointmentView está solicitando o parâmetro necessário e já o passamos na ScheduleAppointmentView. Voltando ao CancelAppointmentView.swift, temos um erro dentro do #Preview. Ao clicarmos em "Fix", ele adiciona o appointmentID, e passaremos como String "123", porque é só o preview.
+
+Arquivo CancelAppointmentView
+#Preview {
+    CancelAppointmentView(appointmentID: "123")
+}
+COPIAR CÓDIGO
+Agora, precisamos implementar a função no WebService. Então, na coluna da esquerda, acessaremos "Service > WebService", implementarmos a função que permitirá a pessoa usuária conseguir desmarcar uma consulta.
+
+Antes de começarmos a criar essa função, voltaremos ao Insomnia rapidamente para tentarmos remover uma consulta através dele. Na coluna da esquerda do Insomnia, navegaremos para "Consulta > Lista todas consultas. Ao executarmos essa requisição, recebemos as consultas na coluna da esquerda.
+
+Copiaremos o ID da primeira consulta e voltaremos para requisição Apagar consulta. Na rota, substituiremos o /:id pelo ID que copiamos. Na mensagem de requisição, manteremos como motivo de cancelamento a "Emergência Familiar".
+
+DELETE localhost:3000/consulta/25aeee0a-2094-41c6-82c3-d98e42236a61
+{
+    "motivo_cancelamento": "Emergência familiar"
+}
+COPIAR CÓDIGO
+"Consulta cancelada com sucesso"
+
+Ao clicarmos no botão "Send" (Enviar), ao lado da barra de endereços, recebemos como retorno um texto simples: "Consulta cancelada com sucesso". Não retornou nenhum modelo de dados, e o status code do retorno foi 200, indicando que a requisição foi bem-sucedida.
+
+Trabalharemos em cima desse código de status, porque o retorno em si não tem nenhuma informação que possamos utilizar, uma vez que não tem nenhum modelo de dados. Então, nossa requisição será um pouco diferente. Antes nós não estávamos trabalhando com informações da resposta da minha requisição, mas agora vamos. Se o status code for 200, significa que a consulta foi cancelada com sucesso.
+
+Voltando ao Xcode, começaremos nossa implementação no WebService.swift. Por volta da linha 16, após a linha da baseURL, criaremos uma função chamada CancelAppointment(), recebendo dois parâmetros: appointmentID e reasonToCancel (motivoParaCancelar), ambos do tipo String. Usaremos o async throws e essa função retornará um booleano, indicando se a requisição foi feita com sucesso ou não.
+
+struct WebService {
+
+    private let baseURL = "http://localhost:3000"
+
+    func cancelAppointment(appointmentID: String, reasonToCancel: String) async throws -> Bool { }
+    
+    //código omitido
+COPIAR CÓDIGO
+Dentro da função, criaremos endpoint, codando let endpoint = base url + "/consulta/" + appointmentId. Esse endpoint é exatamente igual ao da função rescheduleAppointment(), a única diferença é que uma tem como verbo o PATCH, e a outra tem como verbo de requisição o DELETE.
+
+Sendo assim, podemos copiar o trecho código da url da função rescheduleAppointment e colar na cancelAppointment(). Entretanto, ao invés do retorno nill, retornaremos false nos casos de erro.
+
+func cancelAppointment(appointmentID: String, reasonToCancel: String) async throws -> Bool {
+    let endpoint = baseURL + "/consulta/" + appointmentID
+
+    guard let url = URL(string: endpoint) else {
+        print("Erro na URL!")
+        return false
+    }
+}
+COPIAR CÓDIGO
+Em seguida, faremos do mesmo modo que na função rescheduleAppointment(): vamos criar um dicionário e o converter para JSON, porque temos uma única chave, que é o "motivo de cancelamento". Para fazermos isso, depois da url codaremos uma let requestData.
+
+func cancelAppointment(appointmentID: String, reasonToCancel: String) async throws -> Bool {
+    let endpoint = baseURL + "/consulta/" + appointmentID
+
+    guard let url = URL(string: endpoint) else {
+        print("Erro na URL!")
+        return false
+    }
+    
+    let requestData: [String: String] = ["motivoCancelamento" : reasonToCancel]
+
+    let jsonData = try JSONSerialization.data(withJSONObject: requestData)
+}
+COPIAR CÓDIGO
+Feito isso, podemos começar a adicionar informações à requisição, na linha abaixo ao jsonData. Para isso, codaremos var request, passando a URLRequest(url: url). Em seguida, fazemos a requisição do método HTTP "DELETE", a requisição do setValue e a requisição httpBody.
+
+//código omitido
+
+var request = URLRequest(url: url)
+request.httpMethod = "DELETE"
+request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+request.httpBody = jsonData
+COPIAR CÓDIGO
+Em seguida, chamaremos a nossa urlSession. Começaremos criando o let(data, response), mas dessa vez será diferente: não usaremos as informações do data, apenas da response. Sendo assim, no lugar de data, deixaremos apenas um undeline: let(_, response).
+
+let (_, response) = try await URLSession.shared.data(for: request)
+COPIAR CÓDIGO
+Agora, faremos a verificação para certificar que a variável response, obtida ao chamar a função data da urlSession, é do tipo httpUrlResponse. Dessa forma, conseguimos verificar o código de status dessa resposta. Para isso codamos:
+
+if let httpResponse = response as? HTTPURLResponse, httpResponse.statusCode == 200 
+COPIAR CÓDIGO
+Se esta condição for verdadeira, significa que a resposta é do tipo httpUrlResponse e que o meu statusCode é igual a 200, então apenas retornaremos true. Caso contrário, sequer precisamos escrever else, apenas codamos return false, porque ele cairá nesse outro retorno.
+
+func cancelAppointment(appointmentID: String, reasonToCancel: String) async throws -> Bool {
+    let endpoint = baseURL + "/consulta/" + appointmentID
+
+    guard let url = URL(string: endpoint) else {
+        print("Erro na URL!")
+        return false
+    }
+
+    let requestData: [String: String] = ["motivoCancelamento" : reasonToCancel]
+
+    let jsonData = try JSONSerialization.data(withJSONObject: requestData)
+
+    var request = URLRequest(url: url)
+    request.httpMethod = "DELETE"
+    request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+    request.httpBody = jsonData
+
+    let (_, response) = try await URLSession.shared.data(for: request)
+
+    if let httpResponse = response as? HTTPURLResponse,
+        httpResponse.statusCode == 200 {
+        return true
+    }
+
+    return false
+
+}
+COPIAR CÓDIGO
+Ainda não sabemos se está funcionando, então vamos verificar, chamando essa função na CancelAppointmentView. Então retornaremos para "Views > CancelAppointmentView.swift" e, na linha abaixo da variável de estado, criaremos uma função assíncrona chamada cancelAppointment(). Além disso, na linha abaixo do appointmentID, codaremos let service = WebService.
+
+Arquivo CancelAppointmentView.swift
+struct CancelAppointmentView: View {
+
+    var appointmentID: String
+    let service = WebService()
+
+    @State private var reasonToCancel = ""
+
+    func cancelAppointment() async {
+
+    }
+
+//código omitido
+COPIAR CÓDIGO
+Chamarei essa cancelAppointment() no botão. Então na linha 40, ao invés de colocarmos o print("Botão pressionado") como ação, usaremos o Task{} e, dentro dele, chamaremos o await cancelAppointment().
+
+Button(action: {
+    Task {
+        await cancelAppointment()
+    }
+}, label: {
+    ButtonView(text: "Cancelar consulta", buttonType: .cancel)
+})
+COPIAR CÓDIGO
+Voltando para a função cancelAppointment() que está fora do body, dentro dessa função precisamos fazer o do/catch. No catch adicionaremos um print("Ocorreu um erro ao desmarcar a consulta: \(error)"). Já no do codaremos um if contendo o cancelAppointment() e passando as variáveis que equivalem aos parâmetros essa função. Para o appointmentId, utilizamos como parâmetro a variável da linha 12 e, para o reasonToCancel, a variável declarada na linha 15.
+
+func cancelAppointment() async {
+    do {
+        if try await service.cancelAppointment(appointmentID: appointmentID, reasonToCancel: reasonToCancel) {
+        print ("Consulta cancelada com sucesso!")
+        }
+    } catch {
+        print("Ocorreu um erro ao desmarcar a consulta: \(error)")
+    }
+}
+COPIAR CÓDIGO
+Além disso, não declaramos nenhuma variável no if porque retornamos simplesmente um booleano, ou seja, não obtemos nenhuma informação muito relevante. Fizemos esse if porque se a minha função service.cancelAppointment retornar true, ela cairá dentro desse if, que imprimirá "Consulta cancelada com sucesso."
+
+Vamos pressionar "Cmd + R" para testarmos se está funcionando. No emulador, clicamos na aba "Minhas consultas". Já cancelamos uma consulta através do Insomnia e agora tentaremos cancelar a da Dra. Maria Souza.
+
+Clicamos no botão "Cancelar", no card, abrindo a tela "Cancelar consulta". Como motivo da consulta, escreveremos a mensagem "Emergência familiar" e clicaremos em "Cancelar consulta". No Console do XCode, recebemos a mensagem "Consulta cancelada com sucesso".
+
+Um ponto importante é que a consulta precisa ser cancelada com mais de um dia de antecedência. Se você tentar cancelar uma consulta com menos de um dia, ocorrerá um erro de decodificação dos dados. Além disso, deixo para você como um desafio implementar um alerta que dê um feedback visual para a pessoa usuária, caso a consulta seja cancelada com sucesso ou caso dê algum erro.
+
+Com isso, finalizamos! Nós temos uma aplicação completa que consome dados de um serviço externo. Realizamos operações como leitura de dados, envio de dados, atualização de dados e também remoção de dados.
+
+@@06
+Para saber mais: Requisição DELETE
+
+Por fim, abordamos o último tipo de requisição: DELETE.
+Essa requisição faz a remoção de dados de um servidor. Assim, os usuários do app conseguem deletar seus dados. Se considerarmos o CRUD, a requisição DELETE é representada justamente pelo “delete”.
+
+Em termos simples, ela permite que um aplicativo solicite a exclusão de informações específicas em um servidor remoto por meio da interação com uma API.
+
+Para que serve a requisição DELETE?
+A requisição DELETE desempenha um papel essencial no desenvolvimento de aplicativos móveis. Suas principais funções incluem:
+
+Exclusão de recursos: Ela permite que o aplicativo solicite a exclusão de recursos específicos em um servidor. Isso inclui a remoção de itens em um carrinho de compras, a eliminação de mensagens de um sistema de mensagens ou a exclusão de registros de uma base de dados.
+Limpeza de dados: A requisição DELETE é frequentemente usada para limpar ou "desfazer" ações anteriores. Por exemplo, você pode usar DELETE para desfazer uma inscrição em um evento ou para remover uma avaliação que um usuário havia feito anteriormente.
+Gerenciamento de dados: Ela auxilia na manutenção e gerenciamento de dados do servidor. Quando um recurso não é mais necessário ou relevante, a requisição DELETE permite que ele seja removido de forma adequada, mantendo a integridade dos dados.
+Exemplos e casos de uso
+Vamos examinar alguns exemplos para ilustrar como a requisição DELETE pode ser aplicada no desenvolvimento de aplicativos SwiftUI:
+
+Exemplo 1: Remoção de um Item de Carrinho de Compras
+Imagine um aplicativo de compras onde o usuário adicionou vários itens ao carrinho. Quando a pessoa decide remover um item do carrinho, o aplicativo pode enviar uma requisição DELETE para a API do servidor com o ID do item a ser removido. Isso atualiza o carrinho do usuário no servidor, refletindo a remoção do item.
+
+Exemplo 2: Cancelamento de reserva
+Suponha que você esteja construindo um aplicativo para reservar passagens aéreas. Se um usuário desejar cancelar uma reserva, o aplicativo pode enviar uma requisição DELETE com o ID da reserva. Isso instruirá o servidor a cancelar a reserva e liberar os recursos associados.
+
+Exemplo 3: Exclusão de postagem em rede social
+Em uma rede social, os usuários podem criar postagens. Se um usuário decidir excluir uma postagem, o aplicativo pode enviar uma requisição DELETE para a API da rede social com o ID da postagem. Isso resultará na exclusão da postagem no servidor e na remoção dela do feed do usuário.
+
+Fez sentido?
+
+@@07
+Desafio: implementação do alerta na tela de cancelamento
+
+O objetivo deste desafio é fazer com que, quando o usuário decidir cancelar uma consulta, após confirmar essa ação, seja exibido um alerta para informar se o cancelamento foi bem-sucedido ou se houve algum problema.
+Veja uma imagem de como deve ser o resultado final:
+
+Imagem da tela de cancelamento de uma consulta. Na parte superior, há o título “cancelar consulta”. Em seguida, há o texto: “conte-nos o motivo do cancelamento da sua consulta, um botão vermelho de cancelar consulta e uma caixa de texto com a mensagem: “Sucesso! A consulta foi cancelada com sucesso”
+
+Imagem da tela de cancelamento de uma consulta. Na parte superior, há o título “cancelar consulta”. Em seguida, há o texto: “conte-nos o motivo do cancelamento da sua consulta, um botão vermelho de cancelar consulta e uma caixa de cancelamento com a mensagem: “Ops, algo deu errado! Houve um erro ao cancelar sua consulta. Por favor, novamente ou entre em contato via telefone”
+
+Bom desafio! Lembre-se, o processo de resolução e experimentação é tão importante quanto o resultado final. Qualquer dúvida, chama a gente no discord ou no fórum!
+
+@@08
+Desafio: verificação se há consultas na tela de agendamentos de um paciente
+
+O objetivo deste desafio é implementar uma lógica que, se não houver consultas agendadas na tela de agendamentos de um paciente, mostre uma mensagem indicando que "Não há consultas agendadas" ao invés de deixar a tela em branco.
+Veja uma imagem de como deve ser o resultado final:
+
+Imagem que mostra a tela de “minhas consultas”. No centro da tela do aplicativo há a mensagem “Não há nenhuma consulta agendada no momento!”. Na parte inferior da tela, há um menu com as opções “home” e “minhas consultas”.
+
+Esses desafios ajudarão a solidificar o conhecimento e aprimorar as habilidades. Boa sorte com a implementação! Qualquer dúvida, estamos à disposição!
+
+@@09
+Modificações no endpoint
+
+Dado o código e o fluxo de trabalho descritos na aula, analise os métodos de requisição HTTP, as funcionalidades implementadas e os detalhes técnicos mencionados. Com base nisso, responda à seguinte questão:
+Suponha que haja uma modificação na API onde o endpoint de remarcação de consulta agora também requer um motivo para a remarcação, e o motivo é enviado no corpo da requisição, juntamente com a nova data.
+
+Como deveríamos adaptar o método rescheduleAppointment para acomodar essa nova necessidade?
+
+Adicionar um parâmetro adicional reasonToReschedule: String e incorporá-lo ao requestData como ["data": date, "reason": reasonToReschedule].
+ 
+Uma vez que agora precisamos enviar um motivo para a remarcação junto com a nova data, seria lógico modificar a função rescheduleAppointment para incluir este novo parâmetro. Em seguida, ao formar o corpo da requisição, você combinaria a nova data e o motivo em requestData.
+Alternativa correta
+Modificar o httpMethod para "PUT" e enviar os dados conforme necessário.
+ 
+Não é necessário modificar para PUT, pois ainda estamos alterando apenas um dado: a data da consulta. O motivo da remarcação é apenas uma informação adicional que estamos passando.
+Alternativa correta
+Criar um novo método chamado rescheduleWithReason e manter o método original inalterado para fins de compatibilidade.
+ 
+Não é necessário no nosso caso criar um novo método para isso, visto que a mudança se tornou necessária. Essa abordagem pode levar a redundâncias e complicar o código ao longo do tempo, especialmente se várias versões de um método existirem simultaneamente.
+Alternativa correta
+Alterar o endpoint para /consulta/remarcacao/ + appointmentID.
+ 
+A URL não foi alterada, portanto não há necessidade de alterar o endpoint.
+
+@@10
+Faça como eu fiz: aplicando as requisições PATCH e DELETE
+
+Hora de colocar em prática o que vimos durante a aula!
+1 - Implementando a requisição PATCH:
+
+a) Criamos uma função rescheduleAppointment para fazer uma requisição PATCH e atualizar a data de uma consulta.
+func rescheduleAppointment(appointmentID: String, date: String) async throws -> ScheduleAppointmentResponse? { ... }
+COPIAR CÓDIGO
+b) Usamos essa função para reagendar a consulta baseada no ID e na nova data selecionada.
+if let _ = try await service.rescheduleAppointment(...) { ... }
+COPIAR CÓDIGO
+2 - Construindo a tela de cancelamento:
+
+a) Definimos a CancelAppointmentView que apresenta uma caixa de texto para que o usuário insira um motivo para cancelar a consulta.
+struct CancelAppointmentView: View { ... }
+COPIAR CÓDIGO
+b) Adicionamos um link de navegação para a tela de cancelamento:
+NavigationLink {
+    CancelAppointmentView()
+} label: {
+    ButtonView(text: "Cancelar", buttonType: .cancel)
+}
+COPIAR CÓDIGO
+3 - Implementando a requisição DELETE:
+
+a) Desenvolvemos a função cancelAppointment para fazer uma requisição DELETE e cancelar uma consulta;
+func cancelAppointment(appointmentID: String, reasonToCancel: String) async throws -> Bool { ... }
+COPIAR CÓDIGO
+b) Esta função recebe o ID da consulta e um motivo para cancelar. Os dados são enviados para o servidor, que, em caso de sucesso, retorna um código de status 200;
+c) Em nossa tela de cancelamento, chamamos a função cancelAppointment quando o botão é pressionado:
+Task {
+    await cancelAppointment()
+}
+
+
+A capacidade de adaptar a interface do usuário e as ações por trás dela com base nas necessidades do usuário é crucial para um aplicativo de sucesso. O uso de requisições PATCH e DELETE nos permite modificar e remover registros do nosso servidor.
+Dê uma olhada em como o projeto se parece agora no link para a branch no GitHub.
+
+Neste ponto, nosso aplicativo já possui uma funcionalidade robusta para gerenciar consultas, o que foi o objetivo proposto.
+
+Parabéns pelo empenho!
+
+https://github.com/alura-cursos/swiftui-vollmed-crud/tree/aula-06
+
+@@11
+Projeto final
+
+Você pode baixar ou acessar o código fonte do projeto final. Aproveite para explorá-lo e revisar pontos importantes do curso.
+Bons estudos!
+
+https://github.com/alura-cursos/swiftui-vollmed-crud/archive/refs/heads/main.zip
+
+https://github.com/alura-cursos/swiftui-vollmed-crud/tree/main
+
+@@12
+Recados finais
+
+Parabéns, você chegou ao fim do nosso curso. Tenho certeza que esse mergulho foi de muito aprendizado.
+Após os créditos finais do curso, você será redirecionado para uma tela na qual poderá deixar seu feedback e avaliação do curso. Sua opinião é muito importante para nós.
+
+Aproveite para conhecer a nossa comunidade no Discord da Alura e se conectar com outras pessoas com quem pode conversar, aprender e aumentar seu networking.
+
+Continue mergulhando com a gente.
+
+@@13
+O que aprendemos?
+
+Nesta aula, você aprendeu a:
+Implementar a requisição PATCH para atualizar informações;
+Construir uma tela dedicada para o cancelamento de consultas;
+Implementar a requisição DELETE para remover consultas.
+Parabéns! Suas habilidades em desenvolvimento e integração estão se aprofundando.
+
+@@14
+Conclusão
+
+Parabéns por concluir mais um curso de Swift UI, desta vez envolvendo operações CRUD e requisições HTTP.
+Ao longo deste curso, construímos o projeto VollMed, onde é possível para uma pessoa paciente visualizar a lista de especialistas disponíveis e agendar consultas. Para isso, aprendemos a adicionar o calendário utilizando o DatePicker, que permite a seleção de um horário de consulta e, consequentemente, realizar de uma requisição POST para a nossa API externa, para criação de dados.
+
+A pessoa paciente também pode visualizar suas consultas agendadas. Durante este processo, também abordamos a formatação de datas. No aplicativo, há botões para reagendar e cancelar consultas.
+
+Para remarcar as consultas, utilizamos o verbo PATCH para atualizar os dados. Já para o cancelamento, aprendemos um novo componente: o TextEditor(). O TextEditor() nos permite inserir um texto e, em seguida, realizar uma requisição do tipo DELETE.
+
+Com os conhecimentos adquiridos neste curso, você pode criar uma aplicação de ponta a ponta, consumindo uma API externa e a tornando muito mais flexível e dinâmica. Caso tenha qualquer dúvida, sinta-se à vontade para acessar fórum do curso, que iremos te ajudar.
+
+Você também pode acessar o Discord da Alura para pedir ajuda e encontrar outras pessoas desenvolvedoras que já concluíram ou estão fazendo este curso, prontas para trocar ideias e experiências!
+
+Não esqueça de compartilhar seu projeto finalizado nas redes sociais e nos marcar!
+
+Agradeço por chegar até aqui!
+
+Novamente,** parabéns pela conclusão de mais um curso** e até a próxima!
